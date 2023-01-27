@@ -3,6 +3,13 @@ An energy-based model for loop extrusion.
 
 ## The model
 
+Let's assume that each cohesin $i$ can be represented of two coordinates $(m_{i},n_{i})$ we allow three moves in our simulation:
+\begin{enumerate}
+    \item Slide right ($n_{i}\rightarrow n_{i+1}$ to the right).
+    \item Slide left ($m_{i}\rightarrow m_{i-1}$ to the left).
+    \item Rebind somewhere else.
+\end{enumerate}
+
 The main idea of the algorithm is to ensemble loop extrusion from a Boltzmann probability distribution, with Hamiltonian,
 
 $$E = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\sqrt{n_i-m_i}+\dfrac{\kappa}{N_{knot}}\sum_{i,j}K(m_i,n_i;m_j,n_j)+\dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)$$
@@ -12,7 +19,7 @@ $K(m_{i},n_{i};m_{j},n_{j})$ which takes the value 1 when $m_{i} < m_{j} < n_{i}
 
 These $L(\cdot), R(\cdot)$ functions are two functions that define the binding potential and they are orientation specific - so they are different for left and right position of cohesin (because CTCF motifs are orientation specific), therefore when we have a gap in these functions, it means presence of CTCF. These two functions are derived from data with CTCF binning and by running the script for probabilistic orientation. Moreover, by $N_{(\cdot)}$ we symbolize the normalization constants for each factor,
 
-$$N_{fold}=N_{coh}\cdot \langlen_i-m_i\rangle,\quad N_{knot}=N_{coh},\quad N_{bind}=\sum_{k}\left(L(k)+R(k)\right).$$
+$$N_{fold}=N_{coh}\cdot \langle n_i-m_i\rangle,\quad N_{knot}=N_{coh},\quad N_{bind}=\sum_{k}\left(L(k)+R(k)\right).$$
 
 Therefore, we define the folding, knotting and binding energy, which are also metrics that help us to understand the dynamics of our system,
 
@@ -48,12 +55,7 @@ In this manner we accept a move in two cases:
 \end{enumerate}
 And of course, the result - the distribution of loops in equilibrium -  depends on temperature of Boltzmann distribution $T$.
 
-Each cohesin $i$ can be represented of two coordinates $(m_{i},n_{i})$ we allow three moves in our simulation:
-\begin{enumerate}
-    \item Slide right ($n_{i}\rightarrow n_{i+1}$ to the right).
-    \item Slide left ($m_{i}\rightarrow m_{i-1}$ to the left).
-    \item Rebind somewhere else.
-\end{enumerate}
+
 
 ## How to use?
 
