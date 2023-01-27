@@ -16,7 +16,7 @@ $$K(m_i,n_i;m_j,n_j) = \begin{cases}
 
 These $L(\cdot), R(\cdot)$ functions are two functions that define the binding potential and they are orientation specific - so they are different for left and right position of cohesin (because CTCF motifs are orientation specific), therefore when we have a gap in these functions, it means presence of CTCF. These two functions are derived from data with CTCF binning and by running the script for probabilistic orientation. Moreover, by $N_{(\cdot)}$ we symbolize the normalization constants for each factor,
 
-$$N_{fold}=N_{coh}<n_i-m_i>,\quad N_{knot}=N_{coh},\quad N_{bind}=\sum_{k}\left(L(k)+R(k)\right).$$
+$$N_{fold}=N_{coh}\<n_i-m_i\>,\quad N_{knot}=N_{coh},\quad N_{bind}=\sum_{k}\left(L(k)+R(k)\right).$$
 
 Therefore, we define the folding, knotting and binding energy, which are also metrics that help us to understand the dynamics of our system,
 $$\begin{align}
