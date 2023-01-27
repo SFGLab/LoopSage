@@ -8,26 +8,24 @@ The main idea of the algorithm is to ensemble loop extrusion from a Boltzmann pr
 $$E = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\sqrt{n_i-m_i}+\dfrac{\kappa}{N_{knot}}\sum_{i,j}K(m_i,n_i;m_j,n_j)+\dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)$$
 
 The first term corresponds to the folding of chromatin, and the second term is a penalty for the appearance of knots. Therefore, we have the function,
-
-$$K(m_i,n_i;m_j,n_j) = \begin{cases}
-1 & \text{if }m_i<m_j<n_i<n_j\text{ or }m_i=m_j\text{ or }m_{i}=n_{j}\\
-0 & \text{otherwise}
-\end{cases}$$
+$K(m_i,n_i;m_j,n_j)$ which takes the value 1 when $m_i<m_j<n_i<n_j\$ or $m_i=m_j$ or $m_{i}=n_{j}$.
 
 These $L(\cdot), R(\cdot)$ functions are two functions that define the binding potential and they are orientation specific - so they are different for left and right position of cohesin (because CTCF motifs are orientation specific), therefore when we have a gap in these functions, it means presence of CTCF. These two functions are derived from data with CTCF binning and by running the script for probabilistic orientation. Moreover, by $N_{(\cdot)}$ we symbolize the normalization constants for each factor,
 
-$$N_{fold}=N_{coh}\<n_i-m_i\>,\quad N_{knot}=N_{coh},\quad N_{bind}=\sum_{k}\left(L(k)+R(k)\right).$$
+$$N_{fold}=N_{coh}\cdot <n_i-m_i>,\quad N_{knot}=N_{coh},\quad N_{bind}=\sum_{k}\left(L(k)+R(k)\right).$$
 
 Therefore, we define the folding, knotting and binding energy, which are also metrics that help us to understand the dynamics of our system,
-$$\begin{align}
-    E_{fold} &= \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\sqrt{n_i-m_i},\\ E_{knot}&= \dfrac{\kappa}{N_{knot}}\sum_{i,j}K(m_i,n_i;m_j,n_j),\\ E_{bind} &= \dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)
-\end{align}$$
+
+$$E_{fold} &= \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\sqrt{n_i-m_i},$$
+$$E_{knot}&= \dfrac{\kappa}{N_{knot}}\sum_{i,j}K(m_i,n_i;m_j,n_j),$$
+$$E_{bind} &= \dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)$$
+
 And we can write the energy differences as,
-$$\begin{align}
-     \Delta E_{fold} &= \dfrac{f}{N_{fold}}\left(\sqrt{n^{\prime}_i-m^{\prime}_i}-\sqrt{n_i-m_i}\right),\\
-     \Delta E_{knot} &= \dfrac{\kappa}{N_{knot}} \left( \sum_{j}K(m^{\prime}_i,n^{\prime}_i;m_j,n_j)-\sum_{j}K(m_i,n_i;m_j,n_j)\right)\\
-     \Delta E_{bind} &= \dfrac{b}{N_{bind}}\left( L(m^{\prime}_i)+R(n^{\prime}_i)-L(m_i)-R(n_i)\right)
-\end{align}$$
+
+$$\Delta E_{fold} &= \dfrac{f}{N_{fold}}\left(\sqrt{n^{\prime}_i-m^{\prime}_i}-\sqrt{n_i-m_i}\right),$$
+$$\Delta E_{knot} &= \dfrac{\kappa}{N_{knot}} \left( \sum_{j}K(m^{\prime}_i,n^{\prime}_i;m_j,n_j)-\sum_{j}K(m_i,n_i;m_j,n_j)\right)$$
+$$\Delta E_{bind} &= \dfrac{b}{N_{bind}}\left( L(m^{\prime}_i)+R(n^{\prime}_i)-L(m_i)-R(n_i)\right)$$
+
 where the prime values, symbolize the new coordinates of cohesin, if the new move is accepted. Thus,
 
 $$\Delta E = \Delta E_{fold}+\Delta E_{knot}+\Delta E_{bind}.$$
