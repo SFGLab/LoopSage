@@ -4,11 +4,11 @@ An energy-based model for loop extrusion.
 ## The model
 
 Let's assume that each cohesin $i$ can be represented of two coordinates $(m_{i},n_{i})$ we allow three moves in our simulation:
-\begin{enumerate}
-    \item Slide right ($n_{i} \rightarrow n_{i+1}$ to the right).
-    \item Slide left ($m_{i} \rightarrow m_{i-1}$ to the left).
-    \item Rebind somewhere else.
-\end{enumerate}
+
+* Slide right ($n_{i} \rightarrow n_{i+1}$ to the right).
+* Slide left ($m_{i} \rightarrow m_{i-1}$ to the left).
+* Rebind somewhere else.
+
 
 The main idea of the algorithm is to ensemble loop extrusion from a Boltzmann probability distribution, with Hamiltonian,
 
@@ -38,6 +38,7 @@ And we can write the energy differences as,
 $$\Delta E_{fold} = \dfrac{f}{N_{fold}}\left(\sqrt{n^{\prime}_i-m^{\prime}_i}-\sqrt{n_i-m_i}\right),$$
 
 and
+
 $$\Delta E_{knot} = \dfrac{\kappa}{N_{knot}} \left( \sum_{j}K(m^{\prime}_i,n^{\prime}_i;m_j,n_j)-\sum_{j}K(m_i,n_i;m_j,n_j)\right)$$
 
 and
@@ -49,10 +50,10 @@ where the prime values, symbolize the new coordinates of cohesin, if the new mov
 $$\Delta E = \Delta E_{fold}+\Delta E_{knot}+\Delta E_{bind}.$$
 
 In this manner we accept a move in two cases:
-\begin{enumerate}
-    \item If $\Delta E<0$ or,
-    \item if $\Delta E>0$ with probability $e^{-\Delta E/kT}$.
-\end{enumerate}
+
+* If $\Delta E<0$ or,
+* if $\Delta E>0$ with probability $e^{-\Delta E/kT}$.
+
 And of course, the result - the distribution of loops in equilibrium -  depends on temperature of Boltzmann distribution $T$.
 
 
