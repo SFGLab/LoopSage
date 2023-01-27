@@ -5,8 +5,8 @@ An energy-based model for loop extrusion.
 
 Let's assume that each cohesin $i$ can be represented of two coordinates $(m_{i},n_{i})$ we allow three moves in our simulation:
 \begin{enumerate}
-    \item Slide right ($n_{i}\rightarrow n_{i+1}$ to the right).
-    \item Slide left ($m_{i}\rightarrow m_{i-1}$ to the left).
+    \item Slide right ($n_{i} \rightarrow n_{i+1}$ to the right).
+    \item Slide left ($m_{i} \rightarrow m_{i-1}$ to the left).
     \item Rebind somewhere else.
 \end{enumerate}
 
