@@ -17,13 +17,20 @@ $$N_{fold}=N_{coh}\cdot <n_i-m_i>,\quad N_{knot}=N_{coh},\quad N_{bind}=\sum_{k}
 Therefore, we define the folding, knotting and binding energy, which are also metrics that help us to understand the dynamics of our system,
 
 $$E_{fold} = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\sqrt{n_i-m_i},$$
+
+and
 $$E_{knot} = \dfrac{\kappa}{N_{knot}}\sum_{i,j}K(m_i,n_i;m_j,n_j),$$
+
+and
 $$E_{bind} = \dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)$$
 
 And we can write the energy differences as,
 
 $$\Delta E_{fold} = \dfrac{f}{N_{fold}}\left(\sqrt{n^{\prime}_i-m^{\prime}_i}-\sqrt{n_i-m_i}\right),$$
+
+and
 $$\Delta E_{knot} = \dfrac{\kappa}{N_{knot}} \left( \sum_{j}K(m^{\prime}_i,n^{\prime}_i;m_j,n_j)-\sum_{j}K(m_i,n_i;m_j,n_j)\right)$$
+and
 $$\Delta E_{bind} = \dfrac{b}{N_{bind}}\left( L(m^{\prime}_i)+R(n^{\prime}_i)-L(m_i)-R(n_i)\right)$$
 
 where the prime values, symbolize the new coordinates of cohesin, if the new move is accepted. Thus,
