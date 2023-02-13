@@ -56,6 +56,8 @@ class MD_LE:
         simulation.reporters.append(StateDataReporter(stdout, (self.N_steps*sim_step)//10, step=True, totalEnergy=True, potentialEnergy=True, temperature=True))
         simulation.reporters.append(DCDReporter(self.path+'/other/stochastic_LE.dcd', 5))
         simulation.context.setPositions(pdb.positions)
+        current_platform = simulation.context.getPlatform()
+        print(f"Simulation will run on platform: {current_platform.getName()}")
         simulation.minimizeEnergy(tolerance=0.001)
 
         # self.state = simulation.context.getState(getPositions=True)
@@ -64,10 +66,7 @@ class MD_LE:
 
         # Run molecular dynamics simulation
         if run_MD:
-            current_platform = simulation.context.getPlatform()
-            print(f"Simulation will run on platform: {current_platform.getName()}")
             print('Running molecular dynamics (wait for 10 steps)...')
-            
             self.avg_heat,count = np.zeros((self.N_beads,self.N_beads)),0
             for i in range(1,self.N_steps):
                 for nn in range(self.N_coh):

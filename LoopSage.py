@@ -31,16 +31,20 @@ class LoopSage:
         self.L, self.R = L, R
         self.states = np.full(self.N_beads,False)
         self.coh_oc = coh_oc
+        # self.b_mode = 'vector'
         
-        anchors = np.nonzero(self.L)[0]
+        anchors = np.nonzero(self.L)[0] #if self.b_mode=='vector' else np.nonzero(np.sum(M,axis=0))[0]
+        
         self.avg_loop = int(np.average(np.abs(anchors[1:]-anchors[:-1])))+1
-        # print('Average loop size:',self.avg_loop)
+
+        print('Average loop size:',self.avg_loop)
     
     def E_bind(self,ms,ns):
         binding = 0
         for i in range(self.N_coh):
-            binding += self.L[ms[i]]+self.R[ns[i]]
-        return self.b*binding/(np.sum(self.L)+np.sum(self.R))
+            binding += self.L[ms[i]]+self.R[ns[i]] #if self.b_mode=='vector' else self.M[ms[i],ns[i]]
+        E_b = self.b*binding/(np.sum(self.L)+np.sum(self.R)) #if self.b_mode=='vector' else self.b*binding/np.sum(self.M)
+        return E_b
 
     def E_knot(self,ms,ns):
         knotting = 0
@@ -52,17 +56,17 @@ class LoopSage:
     def E_fold(self,ms,ns):
         folding=0
         for i in range(self.N_coh):
-            folding+=np.sqrt(ns[i]-ms[i])
+            folding+=np.log(ns[i]-ms[i])
             
-        return self.f*folding/(self.N_coh*self.avg_loop)
+        return self.Ti*self.f*folding/(self.N_coh*np.log(self.avg_loop))
     
     def get_E(self,ms,ns):
         energy=self.E_bind(ms,ns)+self.E_knot(ms,ns)+self.E_fold(ms,ns)
         return energy
 
     def get_dE(self,ms,ns,m_new,n_new,idx):
-        dE_bind = self.b*(self.L[m_new]+self.R[n_new]-self.L[ms[idx]]-self.R[ns[idx]])/(np.sum(self.L)+np.sum(self.R))
-        dE_fold = self.f*(np.sqrt(n_new-m_new)-np.sqrt(ns[idx]-ms[idx]))/(self.N_coh*self.avg_loop)
+        dE_bind = self.b*(self.L[m_new]+self.R[n_new]-self.L[ms[idx]]-self.R[ns[idx]])/(np.sum(self.L)+np.sum(self.R)) #if self.b_mode=='vector' else self.b*(self.M[m_new,n_new]-self.M[ms[idx],ns[idx]])/np.sum(self.M)
+        dE_fold = self.Ti*self.f*(np.log(n_new-m_new)-np.log(ns[idx]-ms[idx]))/(self.N_coh*np.log(self.avg_loop))
 
         K1, K2 = 0, 0
         for i in range(self.N_coh):
@@ -89,7 +93,7 @@ class LoopSage:
             m_new = rd.choices(np.arange(self.N_beads), weights=self.coh_oc, k=1)[0]
         
         # bind right part of cohesin somewhere close to the left part
-        n_new = m_new+1+poisson.rvs(self.avg_loop//8)
+        n_new = m_new+1+poisson.rvs(self.avg_loop//2)
         if n_new>=self.N_beads: n_new = rd.randint(m_new+1,self.N_beads-1)
         return int(m_new), int(n_new)
 
@@ -114,6 +118,7 @@ class LoopSage:
         return ms, ns
     
     def run_energy_minimization(self,N_steps,MC_step,burnin,T=1,mode='Metropolis',viz=False,vid=False):
+        self.Ti=T
         ms, ns = self.initialize()
         E = self.get_E(ms,ns)
         Es,Ks,Fs,Bs,ufs, slides, unbinds = list(),list(),list(),list(),list(), list(), list()
@@ -136,11 +141,10 @@ class LoopSage:
                     N_slide+=1
 
                 # Compute energy difference
-                dE = self.get_dE(ms,ns,m_new,n_new,j)
+                self.Ti = (T-(i+1)/N_steps) if mode=='Annealing' else T
+                dE = self.get_dE(ms,ns,m_new,n_new,j)        
 
-                Ti = (T-(i+1)/N_steps) if mode=='Annealing' else T
-
-                if dE <= 0 or np.exp(-dE/Ti) > np.random.rand():
+                if dE <= 0 or np.exp(-dE/self.Ti) > np.random.rand():
                     ms[j], ns[j] = m_new, n_new
                     E += dE
                 
@@ -169,12 +173,13 @@ class LoopSage:
         return Es, Ms, Ns, Bs, Ks, Fs, ufs
 
 def main():
-    N_beads,N_coh,kappa,f,b = 1000,50,10000,-500,-500
-    N_steps, MC_step, burnin, T = int(1e4), int(1e2), 20, 0.8
-    L, R = binding_from_bedpe_with_peaks("/mnt/raid/data/Zofia_Trios/bedpe/hg00731_CTCF_pulled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
+    N_beads,N_coh,kappa,f,b = 5000,100,5000,-250,-500
+    N_steps, MC_step, burnin, T = int(2e4), int(1e2), 100, 2
+    L, R = binding_vectors_from_bedpe_with_peaks("/mnt/raid/data/Trios/bedpe/hiccups_loops_sqrtVC_norm/hg00731_smc1_vc_sqrt_merged_loops_v2_edited_2.bedpe",N_beads,[0,46700000],'chr21',False)
+    # M = binding_matrix_from_bedpe("/mnt/raid/data/Trios/bedpe/interactions_maps/hg00731_CTCF_pooled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
     print('Number of CTCF:',np.max([np.count_nonzero(L),np.count_nonzero(R)]))
     sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R)
-    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Metropolis',viz=True,vid=True)
+    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Annealing',viz=True,vid=True)
     np.save('Ms.npy',Ms)
     np.save('Ns.npy',Ns)
     np.save('Fs.npy',Fs)

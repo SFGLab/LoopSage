@@ -106,7 +106,7 @@ def generate_psf(n: int, file_name='stochastic_LE.psf', title="No title provided
     lines.append('\n')
     lines.append('{:>8} !NATOM\n'.format(n))
     for k in range(1, n + 1):
-        lines.append('{:>8} BEAD {:<5}ALA  CA   A      0.000000        1.00 0           0\n'.format(k, k))
+        lines.append('{:>8} BEAD {:<5} ALA  CA   A      0.000000        1.00 0           0\n'.format(k, k))
     lines.append('\n')
     lines.append('{:>8} !NBOND: bonds\n'.format(n - 1))
     for i in range(1, n):
