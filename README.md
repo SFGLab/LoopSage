@@ -12,7 +12,7 @@ Let's assume that each cohesin $i$ can be represented of two coordinates $(m_{i}
 
 The main idea of the algorithm is to ensemble loop extrusion from a Boltzmann probability distribution, with Hamiltonian,
 
-$$E = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\sqrt{n_i-m_i}+\dfrac{\kappa}{N_{knot}}\sum_{i,j}K(m_i,n_i;m_j,n_j)+\dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)$$
+$$E = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\log(n_i-m_i)+\dfrac{\kappa}{N_{knot}}\sum_{i,j}K(m_i,n_i;m_j,n_j)+\dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)$$
 
 The first term corresponds to the folding of chromatin, and the second term is a penalty for the appearance of knots. Therefore, we have the function,
 $K(m_{i},n_{i};m_{j},n_{j})$ which takes the value 1 when $m_{i} < m_{j} < n_{i} < n_{j}$ or $m_{i}=m_{j}$ or $m_{i}=n_{j}$.
@@ -23,7 +23,7 @@ $$N_{fold}=N_{coh}\cdot \langle n_i-m_i\rangle,\quad N_{knot}=N_{coh},\quad N_{b
 
 Therefore, we define the folding, knotting and binding energy, which are also metrics that help us to understand the dynamics of our system,
 
-$$E_{fold} = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\sqrt{n_i-m_i},$$
+$$E_{fold} = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\log(n_i-m_i),$$
 
 and
 
@@ -35,7 +35,7 @@ $$E_{bind} = \dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)$$
 
 And we can write the energy differences as,
 
-$$\Delta E_{fold} = \dfrac{f}{N_{fold}}\left(\sqrt{n^{\prime}_i-m^{\prime}_i}-\sqrt{n_i-m_i}\right),$$
+$$\Delta E_{fold} = \dfrac{f}{N_{fold}}\left(\log(n^{\prime}_i-m^{\prime}_i)-\log(n_i-m_i)\right),$$
 
 and
 
