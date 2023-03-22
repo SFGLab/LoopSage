@@ -3,6 +3,7 @@ import imageio
 import os
 import shutil
 import numpy as np
+import random as rd
 import matplotlib.pyplot as plt
 from PIL import Image
 from sewar.full_ref import mse, rmse, psnr, uqi, ssim, ergas, scc, rase, sam, msssim, vifp
@@ -128,29 +129,79 @@ def temperature_biff_diagram(T_range, f=-500, b=-200,N_beads=500,N_coh=50, kappa
 
     return Knots, Bins, Folds
 
-def temperature_T_Ncoh_diagram(T_range,Ncoh_range, f=-500, b=-200, kappa=10000, N_beads=500, file='CTCF_hg38_PeakSupport_2.bedpe'):
-    color = iter(cm.rainbow(np.linspace(0, 1, len(Ncoh_range))))
+def temperature_T_Ncoh_diagram(T_range, Ncoh_range=np.array([10,25,50,70]), f=-100, b=-100, kappa=20000, N_beads=500, file='/mnt/raid/data/Trios/bedpe/hiccups_loops_sqrtVC_norm/hg00731_ctcf_vc_sqrt_merged_loops_edited_2.bedpe'):
+    colors = ['red','green','purple','cyan']
     figure(figsize=(12, 8), dpi=600)
-    for N_coh in Ncoh_range:
+    for j, N_coh in enumerate(Ncoh_range):
         Bins, Knots, Folds, UFs = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
         for i, T in enumerate(T_range):
-            L, R = binding_from_bedpe_with_peaks(file,N_beads,[48100000,48700000],'chr3',False)
-            sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R)
-            Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=2000,MC_step=100,T=T,mode='Metropolis',viz=False)
-            Bins[i], Knots[i], Folds[i], UFs[i] = np.average(Bs[10:]), np.average(Ks[10:]), np.average(Fs[10:]), np.average(ufs[10:])
-
-        c = next(color)
+            L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N_beads,[40000000,45000000],'chr3',False)
+            N_CTCF = (np.count_nonzero(L)+np.count_nonzero(R))/2
+            print('Number of CTCF:',N_CTCF)
+            sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists)
+            Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=2000,MC_step=10,T=T,burnin=100,mode='Metropolis',viz=False)
+            Bins[i], Knots[i], Folds[i], UFs[i] = np.average(Bs[100:]), np.average(Ks[100:]), np.average(Fs[100:]), np.average(ufs[100:])
+        
+        c = colors[j]
+        N_CTCF = (np.count_nonzero(L)+np.count_nonzero(R))/2
         plt.plot(T_range,np.abs(Folds),'-',label=f'Ncoh={N_coh}',c=c)
         plt.plot(T_range,np.abs(UFs),'--',c=c)
+    print('Number of CTCF:',N_CTCF)
     plt.ylabel('Metrics', fontsize=18)
     plt.xlabel('Temperature', fontsize=18)
     # plt.yscale('symlog')
-    plt.legend(fontsize=11)
+    plt.legend(fontsize=16)
     plt.grid()
-    plt.savefig('Ncoh_temp_bif_plot.png',dpi=600)
+    plt.savefig(f'Ncoh_temp_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}.png',dpi=600)
     plt.show()
     
     return Knots, Bins, Folds
+
+def Nbeads_diagram(Nbs, N_coh=20, T=1, f=-100, b=-100, kappa=20000, file='/mnt/raid/data/Trios/bedpe/hiccups_loops_sqrtVC_norm/hg00731_ctcf_vc_sqrt_merged_loops_edited_2.bedpe'):
+    Folds, UFs = np.zeros(len(Nbs)), np.zeros(len(Nbs))
+    figure(figsize=(12, 8), dpi=600)
+    for i, N in enumerate(Nbs):
+        L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N,[40000000,45000000],'chr3',False)
+        sim = LoopSage(N,N_coh,kappa,f,b,L,R,dists)
+        Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=2000,MC_step=10,T=T,burnin=100,mode='Metropolis',viz=False)
+        Folds[i], UFs[i] = np.average(Fs[100:]), np.average(ufs[100:])
+
+    plt.plot(Nbs,np.abs(Folds),'k-')
+    plt.plot(Nbs,np.abs(UFs),'k--')
+    plt.xlabel(r'$N_{beads}$', fontsize=18)
+    plt.ylabel('Metrics', fontsize=18)
+    plt.legend(['Folding','Proportion of Gaps'],fontsize=16)
+    # plt.yscale('symlog')
+    plt.grid()
+    plt.savefig('Nbeads_plot.png',dpi=600)
+    plt.show()
+
+def fb_heatmap(fs,bs,T,N_beads=500,N_coh=20,kappa=200000,file='/mnt/raid/data/Trios/bedpe/hiccups_loops_sqrtVC_norm/hg00731_ctcf_vc_sqrt_merged_loops_edited_2.bedpe'):
+    fold_mat  = np.zeros([len(fs),len(bs)])
+    ufold_mat = np.zeros([len(fs),len(bs)])
+    for i,f in enumerate(fs):
+        for j,b in enumerate(bs):
+            L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N_beads,[48100000,58700000],'chr3',False)
+            sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists)
+            Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=2000,MC_step=10,T=T,burnin=100,mode='Metropolis',viz=False)
+            fold_mat[i,j] = np.average(Fs[100:])
+            ufold_mat[i,j] = np.average(ufs[100:])
+
+    figure(figsize=(12, 12), dpi=600)
+    plt.contourf(fs, bs, fold_mat,cmap='gnuplot',vmax=2)
+    plt.xlabel('b',fontsize=16)
+    plt.ylabel('f',fontsize=16)
+    plt.colorbar()
+    plt.savefig(f'fold_heat_T{T}.png',dpi=600)
+    plt.show()
+
+    figure(figsize=(12, 12), dpi=600)
+    plt.contourf(fs, bs, ufold_mat,cmap='gnuplot',vmax=1.5)
+    plt.xlabel('b',fontsize=16)
+    plt.ylabel('f',fontsize=16)
+    plt.colorbar()
+    plt.savefig(f'ufold_heat_T{T}.png',dpi=600)
+    plt.show()
 
 def average_pooling(mat,dim_new):
     im = Image.fromarray(mat)
@@ -162,9 +213,9 @@ def correlation_plot(given_heatmap,T_range):
     pearsons, spearmans, kendals = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
     exp_heat_dim = len(given_heatmap)
     for i, T in enumerate(T_range):
-        N_beads,N_coh,kappa,f,b = 500,30,10000,-500,-500
+        N_beads,N_coh,kappa,f,b = 500,30,20000,-2000,-2000
         N_steps, MC_step, burnin = int(1e4), int(1e2), 20
-        L, R = binding_from_bedpe_with_peaks("/mnt/raid/data/Zofia_Trios/bedpe/hg00731_CTCF_pulled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
+        L, R = binding_vectors_from_bedpe_with_peaks("/mnt/raid/data/Zofia_Trios/bedpe/hg00731_CTCF_pulled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
         sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R)
         Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Metropolis',viz=False,vid=False)
         md = MD_LE(Ms,Ns,N_beads,burnin,MC_step)
@@ -192,4 +243,19 @@ def correlation_plot(given_heatmap,T_range):
     plt.legend(['Pearson','Spearman','Kendall Tau'])
     plt.grid()
     plt.savefig('pearson_plot.png',dpi=600)
+    plt.show()
+
+def coh_traj_plot(ms,ns,N_beads):
+    N_coh = len(ms)
+    figure(figsize=(18, 12))
+    color = ["#"+''.join([rd.choice('0123456789ABCDEF') for j in range(6)]) for i in range(N_coh)]
+    size = 0.01 if (N_beads > 500 or N_coh > 20) else 0.1
+    
+    ls = 'None'
+    for nn in range(N_coh):
+        tr_m, tr_n = ms[nn], ns[nn]
+        plt.fill_between(np.arange(len(tr_m)), tr_m, tr_n, color=color[nn], alpha=0.4, interpolate=False, linewidth=0)
+    plt.xlabel('Simulation Step', fontsize=16)
+    plt.ylabel('Position of Cohesin', fontsize=16)    
+    plt.savefig('coh_trajectories.png', format='png', dpi=700)
     plt.show()
