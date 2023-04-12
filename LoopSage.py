@@ -26,14 +26,15 @@ def Kappa(mi,ni,mj,nj):
     return k
 
 class LoopSage:
-    def __init__(self,N_beads,N_coh,kappa,f,b,L,R,dists):
-        self.N_beads, self.N_coh = N_beads, N_coh
+    def __init__(self,N_beads,N_coh,kappa,f,b,L,R,dists,path):
+        self.N_beads, self.N_coh, self.N_CTCF = N_beads, N_coh, np.max([np.count_nonzero(L),np.count_nonzero(R)])
         self.kappa, self.f, self.b = kappa, f, b
         self.L, self.R = L, R
         self.states = np.full(self.N_beads,False)
         self.dists = np.array(dists)
         self.avg_loop, self.max_loop = int(np.average(self.dists))+1, int(np.max(self.dists))+1
         self.log_avg_loop = np.average(np.log(self.dists+1))
+        self.path=path
         print('Average logarithmic loop size',self.log_avg_loop)
         # self.b_mode = 'vector'
 
@@ -150,7 +151,7 @@ class LoopSage:
                 # Save trajectories
                 Ms[j,i], Ns[j,i] = ms[j], ns[j]
                 if i%MC_step==0:
-                    if vid: draw_arcplot(Ms[:,i],Ns[:,i],self.N_beads,i//MC_step)
+                    if vid: draw_arcplot(Ms[:,i],Ns[:,i],self.N_beads,i//MC_step,self.path)
             
             # Compute Metrics
             if i%MC_step==0:
@@ -165,27 +166,32 @@ class LoopSage:
         print('Done! ;D')
         
         # Some vizualizations
-        if viz: make_timeplots(Es, Bs, Ks, Fs, burnin)
-        if viz: make_moveplots(unbinds, slides)
-        if viz: coh_traj_plot(Ms,Ns,self.N_beads)
-        if vid: make_gif(N_steps//MC_step)
+        save_info(self.N_beads,self.N_coh,self.N_CTCF,self.kappa,self.f,self.b,self.avg_loop,self.path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs)
+        if viz: make_timeplots(Es, Bs, Ks, Fs, burnin, self.path)
+        if viz: make_moveplots(unbinds, slides, self.path)
+        if viz: coh_traj_plot(Ms,Ns,self.N_beads, self.path)
+        if vid: make_gif(N_steps//MC_step, self.path)
         
         return Es, Ms, Ns, Bs, Ks, Fs, ufs
 
 def main():
-    N_beads,N_coh,kappa,f,b = 2000,50,20000,-2000,-2000
-    N_steps, MC_step, burnin, T = int(5e3), int(1e1), 100, 5
-    L, R, dists = binding_vectors_from_bedpe_with_peaks("/mnt/raid/data/Anup/Pred_178421513_186491193_2.bedpe",N_beads,[178421513,186491193],'chr1',False)
+    N_beads,N_coh,kappa,f,b = 1000,50,20000,-1000,-1000
+    N_steps, MC_step, burnin, T = int(1e4), int(1e2), 10, 5
+    region, chrom = [62995174,64865930], 'chr14'
+    bedpe_file = "/mnt/raid/data/Zhonghui/bedpe/GM12878WT_ChIAPET_SMC1A_InSitu_2.bedpe"
+    L, R, dists = binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,False)
     # M = binding_matrix_from_bedpe("/mnt/raid/data/Trios/bedpe/interactions_maps/hg00731_CTCF_pooled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
     print('Number of CTCF:',np.max([np.count_nonzero(L),np.count_nonzero(R)]))
-    sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists)
+    path = make_folder(N_beads,N_coh,region,chrom,with_RNA=False)
+    sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,path)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Annealing',viz=True,vid=False)
-    np.save('Ms.npy',Ms)
+    np.save(path+'Ms.npy',Ms)
     np.save('Ns.npy',Ns)
     np.save('Fs.npy',Fs)
     np.save('Bs.npy',Bs)
-    md = MD_LE(Ms,Ns,N_beads,burnin,MC_step)
-    md.run_pipeline(write_files=True,plots=True)
+    md = MD_LE(Ms,Ns,N_beads,burnin,MC_step,path)
+    sim_heat = md.run_pipeline(write_files=True,plots=True)
+    corr_exp_heat(sim_heat,bedpe_file,region,chrom,N_beads,path)
 
 if __name__=='__main__':
     main()

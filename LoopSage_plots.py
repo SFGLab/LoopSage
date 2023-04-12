@@ -27,12 +27,13 @@ def draw_contact(c, y, start, end, lw=0.005, h=0.4):
 #     c.arc_negative((start+end)/2, 0.9, length/2, 0, math.pi)
 #     c.stroke()
 
-def draw_arcplot(ms, ns, N_beads,idx, lw_axis=0.005,axis_h=0.8):
+def draw_arcplot(ms, ns, N_beads,idx, lw_axis=0.005,axis_h=0.8,path=None):
+    save_path = path+"/plots/arcplots/" if path!=None else "/plots/arcplots/"
     try:
-        os.mkdir(f'plots/arcplots')
+        os.mkdir(save_path)
     except OSError as error: pass
 
-    with cairo.SVGSurface(f"plots/arcplots/arcplot_{idx}.svg", 800, 400) as surface:
+    with cairo.SVGSurface(save_path+f"arcplot_{idx}.svg", 800, 400) as surface:
         c = cairo.Context(surface)
         c.scale(800, 400)
         c.rectangle(0, 0, 800, 400)
@@ -62,18 +63,18 @@ def draw_arcplot(ms, ns, N_beads,idx, lw_axis=0.005,axis_h=0.8):
         c.stroke()
 
         # Save as a SVG and PNG
-        surface.write_to_png(f'plots/arcplots/arcplot_{idx}.png')
-        os.remove(f"plots/arcplots/arcplot_{idx}.svg")
+        surface.write_to_png(save_path+f'arcplot_{idx}.png')
+        os.remove(save_path+f"arcplot_{idx}.svg")
 
-def make_gif(N):
+def make_gif(N,path=None):
     with imageio.get_writer('plots/arc_video.gif', mode='I') as writer:
         for i in range(N):
             image = imageio.imread(f"plots/arcplots/arcplot_{i}.png")
             writer.append_data(image)
+    save_path = path+"/plots/arcplots/" if path!=None else "/plots/arcplots/"
+    shutil.rmtree(save_path)
 
-    shutil.rmtree(f"plots/arcplots/")
-
-def make_timeplots(Es, Bs, Ks, Fs, burnin):
+def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
     try:
         os.mkdir('plots')
     except OSError as error: pass
@@ -88,10 +89,11 @@ def make_timeplots(Es, Bs, Ks, Fs, burnin):
     # plt.yscale('symlog')
     plt.legend(['Total Energy', 'Binding', 'Knotting', 'Folding'], fontsize=16)
     plt.grid()
-    plt.savefig('timeplot.png',dpi=600)
+    save_path = path+'/plots/energies.png' if path!=None else 'energies.png'
+    plt.savefig(save_path,dpi=600)
     plt.show()
 
-def make_moveplots(unbinds, slides):
+def make_moveplots(unbinds, slides, path=None):
     try:
         os.mkdir('plots')
     except OSError as error: pass
@@ -103,7 +105,8 @@ def make_moveplots(unbinds, slides):
     # plt.yscale('symlog')
     plt.legend(['Rebinding', 'Sliding'], fontsize=16)
     plt.grid()
-    plt.savefig('moveplot.png',dpi=600)
+    save_path = path+'/plots/moveplot.png' if path!=None else 'moveplot.png'
+    plt.savefig(save_path,dpi=600)
     plt.show()
 
 def temperature_biff_diagram(T_range, f=-500, b=-200,N_beads=500,N_coh=50, kappa=10000, file='CTCF_hg38_PeakSupport_2.bedpe'):
@@ -245,7 +248,7 @@ def correlation_plot(given_heatmap,T_range):
     plt.savefig('pearson_plot.png',dpi=600)
     plt.show()
 
-def coh_traj_plot(ms,ns,N_beads):
+def coh_traj_plot(ms,ns,N_beads,path):
     N_coh = len(ms)
     figure(figsize=(18, 12))
     color = ["#"+''.join([rd.choice('0123456789ABCDEF') for j in range(6)]) for i in range(N_coh)]
@@ -256,6 +259,7 @@ def coh_traj_plot(ms,ns,N_beads):
         tr_m, tr_n = ms[nn], ns[nn]
         plt.fill_between(np.arange(len(tr_m)), tr_m, tr_n, color=color[nn], alpha=0.4, interpolate=False, linewidth=0)
     plt.xlabel('Simulation Step', fontsize=16)
-    plt.ylabel('Position of Cohesin', fontsize=16)    
-    plt.savefig('coh_trajectories.png', format='png', dpi=700)
+    plt.ylabel('Position of Cohesin', fontsize=16)
+    save_path = path+'/plots/coh_trajectories.png' if path!=None else 'coh_trajectories.png'
+    plt.savefig(save_path, format='png', dpi=700)
     plt.show()

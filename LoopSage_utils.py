@@ -6,13 +6,15 @@ from matplotlib.pyplot import figure
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import pandas as pd
 from scipy.spatial import distance
 from matplotlib.colors import LinearSegmentedColormap
+from scipy.stats.stats import pearsonr
 # from LoCR import *
 from tqdm import tqdm
 
-def make_folder(N_beads,N_coh,with_RNA=False):
-    folder_name = f'LoopSage_Nbeads_{N_beads}_Ncoh_{N_coh}'
+def make_folder(N_beads,N_coh,region,chrom,with_RNA=False):
+    folder_name = f'LoopSage_Nbeads_{N_beads}_Ncoh_{N_coh}_{chrom}_reg_[{region[0]},{region[1]}]'
     try:
         if with_RNA: folder_name = folder_name+f'_withRNAPs'
         os.mkdir(folder_name)
@@ -62,6 +64,56 @@ _struct_conn.ptnr2_label_asym_id
 _struct_conn.ptnr2_label_seq_id
 _struct_conn.ptnr2_label_atom_id
 """
+
+def corr_exp_heat(mat_sim,bedpe_file,region,chrom,N_beads,path):
+    # Read file and select the region of interest
+    df = pd.read_csv(bedpe_file,sep='\t',header=None)
+    df = df[(df[1]>=region[0])&(df[5]<=region[1])&(df[0]==chrom)].reset_index(drop=True)
+
+    # Convert hic coords into simulation beads
+    resolution = (region[1]-region[0])//N_beads
+    df[1], df[2], df[4], df[5] = (df[1]-region[0])//resolution, (df[2]-region[0])//resolution, (df[4]-region[0])//resolution, (df[5]-region[0])//resolution
+    
+    # Compute the matrix
+    exp_vec, th_vec = np.zeros(N_beads), np.zeros(N_beads)
+    for i in range(len(df)):
+        x, y = (df[1][i]+df[2][i])//2, (df[4][i]+df[5][i])//2
+        if df[7][i]>=0: exp_vec[x]+=df[6][i]
+        if df[8][i]>=0: exp_vec[y]+=df[6][i]
+        th_vec[x]+=mat_sim[x,y]
+        th_vec[y]+=mat_sim[x,y]
+
+    pears = pearsonr(th_vec,exp_vec)
+    print('Pearson Correlation: ', pears)
+
+    fig, axs = plt.subplots(2, figsize=(15, 20))
+    fig.suptitle('Vertically stacked subplots')
+    axs[0].plot(exp_vec)
+    axs[1].plot(th_vec)
+    plt.title(f'Pearson Correlation {pears:.3f}',fontsize=16)
+    plt.grid()
+    plt.savefig(path+'/plots/pearson.png',dpi=600)
+    plt.show()
+
+    return pears
+
+def write_cmm(comps,name):
+    comp_old = 2
+    counter, start = 0, 0
+    comp_dict = {-1:'red', 1:'blue'}
+    content = ''
+
+    for i, comp in enumerate(comps):
+        if comp_old==comp:
+            counter+=1
+        elif i!=0:
+            content+=f'color {comp_dict[comp_old]} :{start}-{start+counter+1}\n'
+            counter, start = 0, i
+        comp_old=comp
+
+    content+=f'color {comp_dict[comp]} :{start}-{start+counter+1}\n'
+    with open(name, 'w') as f:
+        f.write(content)
 
 def write_mmcif(points,cif_file_name='LE_init_struct.cif'):
     atoms = ''
@@ -384,3 +436,13 @@ def total_angle3d(structure):
     return sum([angle3d(np.array(structure[i-1])-np.array(structure[i]),
                         np.array(structure[i+1])-np.array(structure[i]))
                 for i in range(1, len(structure)-1)])/np.pi/(len(structure)-2)
+
+def save_info(N_beads,N_coh,N_CTCF,kappa,f,b,avg_loop,path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs):
+    file = open(path+'/other/info.txt', "w")
+    file.write(f'Number of beads {N_beads}\n')
+    file.write(f'Number of cohesins {N_coh}\n')
+    file.write(f'Number of CTCFs {N_CTCF}\n')
+    file.write(f'Average loop size {avg_loop}\n')
+    file.write(f'f = {f}, b={b}, k={kappa}\n')
+    file.write(f'Monte Carlo parameters: N_steps={N_steps}, MC_step={MC_step}, burnin={burnin*MC_step}, method {mode}\n')
+    file.write(f'Equillibrium parameters: uf={np.average(ufs)}, E={np.average(Es)}, Ks={np.average(Ks)}, Fs={np.average(Fs)}, Bs={np.average(Bs)}')

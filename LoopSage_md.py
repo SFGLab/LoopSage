@@ -3,6 +3,7 @@
 #########################################################################
 
 import copy
+import time
 import numpy as np
 import openmm as mm
 import openmm.unit as u
@@ -15,7 +16,7 @@ from structuregenerator.generator import self_avoiding_random_walk
 from LoopSage_utils import *
 
 class MD_LE:
-    def __init__(self,M,N,N_beads,burnin,MC_step):
+    def __init__(self,M,N,N_beads,burnin,MC_step,path):
         '''
         M, N (np arrays): Position matrix of two legs of cohesin m,n. 
                           Rows represent  loops/cohesins and columns represent time
@@ -26,7 +27,7 @@ class MD_LE:
         self.M, self.N = M, N
         self.N_coh, self.N_steps = M.shape
         self.N_beads, self.step, self.burnin = N_beads, MC_step, burnin
-        self.path = make_folder(N_beads,self.N_coh,with_RNA=False)
+        self.path = path
 
     def run_pipeline(self,run_MD=True,sim_step=10,write_files=False,plots=False):
         '''
@@ -82,6 +83,7 @@ class MD_LE:
                     save_path = self.path+f'/heatmaps/heat_{count}.svg' if write_files else None
                     self.avg_heat += get_heatmap(self.state.getPositions(),save_path=save_path,save=write_files)
                     count+=1
+                    time.sleep(5)
 
             print('Everything is done bro! Simulation finished succesfully!')
 
