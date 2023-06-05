@@ -13,10 +13,10 @@ from scipy.stats.stats import pearsonr
 # from LoCR import *
 from tqdm import tqdm
 
-def make_folder(N_beads,N_coh,region,chrom,with_RNA=False):
+def make_folder(N_beads,N_coh,region,chrom,label=None):
     folder_name = f'LoopSage_Nbeads_{N_beads}_Ncoh_{N_coh}_{chrom}_reg_[{region[0]},{region[1]}]'
     try:
-        if with_RNA: folder_name = folder_name+f'_withRNAPs'
+        if label!=None: folder_name = folder_name+'_'+label
         os.mkdir(folder_name)
         os.mkdir(folder_name+'/plots')
         os.mkdir(folder_name+'/other')
@@ -80,20 +80,21 @@ def corr_exp_heat(mat_sim,bedpe_file,region,chrom,N_beads,path):
         x, y = (df[1][i]+df[2][i])//2, (df[4][i]+df[5][i])//2
         if df[7][i]>=0: exp_vec[x]+=df[6][i]
         if df[8][i]>=0: exp_vec[y]+=df[6][i]
-        th_vec[x]+=mat_sim[x,y]
-        th_vec[y]+=mat_sim[x,y]
+        if df[7][i]>=0: th_vec[x]+=mat_sim[x,y]
+        if df[8][i]>=0: th_vec[y]+=mat_sim[x,y]
 
     pears = pearsonr(th_vec,exp_vec)
-    print('Pearson Correlation: ', pears)
+    print('Pearson Correlation with experimental heatmap: ', pears[0])
 
-    fig, axs = plt.subplots(2, figsize=(15, 20))
-    fig.suptitle('Vertically stacked subplots')
+    fig, axs = plt.subplots(2, figsize=(15, 10))
+    fig.suptitle(f'Estimated Pearson Correlation {pears[0]:.3f}',fontsize=18)
     axs[0].plot(exp_vec)
+    axs[0].set_ylabel('Experimental Signal',fontsize=16)
     axs[1].plot(th_vec)
-    plt.title(f'Pearson Correlation {pears:.3f}',fontsize=16)
-    plt.grid()
-    plt.savefig(path+'/plots/pearson.png',dpi=600)
-    plt.show()
+    axs[1].set_ylabel('Simulation Signal',fontsize=16)
+    axs[1].set_xlabel('Genomic Distance (with simumation beads as a unit)',fontsize=16)
+    fig.savefig(path+'/plots/pearson.png',dpi=600)
+    fig.show()
 
     return pears
 
@@ -445,4 +446,4 @@ def save_info(N_beads,N_coh,N_CTCF,kappa,f,b,avg_loop,path,N_steps,MC_step,burni
     file.write(f'Average loop size {avg_loop}\n')
     file.write(f'f = {f}, b={b}, k={kappa}\n')
     file.write(f'Monte Carlo parameters: N_steps={N_steps}, MC_step={MC_step}, burnin={burnin*MC_step}, method {mode}\n')
-    file.write(f'Equillibrium parameters: uf={np.average(ufs)}, E={np.average(Es)}, Ks={np.average(Ks)}, Fs={np.average(Fs)}, Bs={np.average(Bs)}')
+    file.write(f'Equillibrium parameters: uf={np.average(ufs)}, E={np.average(Es)}, K={np.average(Ks)}, F={np.average(Fs)}, B={np.average(Bs)}')

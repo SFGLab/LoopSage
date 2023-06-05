@@ -9,8 +9,10 @@ from PIL import Image
 from sewar.full_ref import mse, rmse, psnr, uqi, ssim, ergas, scc, rase, sam, msssim, vifp
 from matplotlib.pyplot import figure
 from matplotlib.pyplot import cm
+from statsmodels.graphics.tsaplots import plot_acf
 import scipy.stats
 from LoopSage import *
+from tqdm import tqdm
 
 try:
     os.mkdir(f'plots')
@@ -90,7 +92,16 @@ def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
     plt.legend(['Total Energy', 'Binding', 'Knotting', 'Folding'], fontsize=16)
     plt.grid()
     save_path = path+'/plots/energies.png' if path!=None else 'energies.png'
-    plt.savefig(save_path,dpi=600)
+    plt.savefig(save_path,dpi=200)
+    plt.show()
+
+    # Autocorrelation plot
+    plot_acf(Fs, title=None, lags=len(Fs)//2)
+    plt.ylabel("Autocorrelations", fontsize=16)
+    plt.xlabel("Lags", fontsize=16)
+    plt.grid()
+    save_path = path+'/plots/autoc.png' if path!=None else 'autoc.png'
+    plt.savefig(save_path,dpi=200)
     plt.show()
 
 def make_moveplots(unbinds, slides, path=None):
@@ -260,6 +271,44 @@ def coh_traj_plot(ms,ns,N_beads,path):
         plt.fill_between(np.arange(len(tr_m)), tr_m, tr_n, color=color[nn], alpha=0.4, interpolate=False, linewidth=0)
     plt.xlabel('Simulation Step', fontsize=16)
     plt.ylabel('Position of Cohesin', fontsize=16)
+    plt.gca().invert_yaxis()
     save_path = path+'/plots/coh_trajectories.png' if path!=None else 'coh_trajectories.png'
-    plt.savefig(save_path, format='png', dpi=700)
+    plt.savefig(save_path, format='png', dpi=200)
+    save_path = path+'/plots/coh_trajectories.pdf' if path!=None else 'coh_trajectories.pdf'
+    plt.savefig(save_path, format='pdf', dpi=600)
+    plt.show()
+
+def stochastic_heatmap(ms,ns,step,L,path,comm_prop=True,fill_square=True):
+    N_coh, N_steps = ms.shape
+    mats = list()
+    for t in range(0,N_steps,step):
+        # add a loop where there is a cohesin
+        mat = np.zeros((L,L))
+        for m, n in zip(ms[:,t],ns[:,t]):
+            mat[m,n] = 1
+            mat[n,m] = 1
+        
+        # if a->b and b->c then a->c
+        if comm_prop:
+            for iter in range(3):
+                xs, ys = np.nonzero(mat)
+                for i, n in enumerate(ys):
+                    if len(np.where(xs==(n+1))[0])>0:
+                        j = np.where(xs==(n+1))[0]
+                        mat[xs[i],ys[j]] = 2*iter+1
+                        mat[ys[j],xs[i]] = 2*iter+1
+
+        # feel the square that it is formed by each loop (m,n)
+        if fill_square:
+            xs, ys = np.nonzero(mat)
+            for x, y in zip(xs,ys):
+                if y>x: mat[x:y,x:y] += 0.01*mat[x,y]
+
+        mats.append(mat)
+    avg_mat = np.average(mats,axis=0)
+    figure(figsize=(10, 10))
+    plt.imshow(avg_mat,cmap="Reds",vmax=np.average(avg_mat)+3*np.std(avg_mat))
+    save_path = path+f'/plots/stochastic_heatmap.svg' if path!=None else 'stochastic_heatmap.svg'
+    plt.savefig(save_path,format='svg',dpi=500)
+    plt.colorbar()
     plt.show()
