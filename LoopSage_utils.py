@@ -23,7 +23,8 @@ def make_folder(N_beads,N_coh,region,chrom,label=None):
         os.mkdir(folder_name+'/pdbs')
         os.mkdir(folder_name+'/heatmaps')
     except OSError as error:
-        print(f'Directory with name "{folder_name}" already exists! No problem lets continue!')
+        a=1
+        # print(f'Directory with name "{folder_name}" already exists! No problem lets continue!')
     return folder_name
 
 ############# Creation of mmcif and psf files #############
@@ -94,6 +95,7 @@ def corr_exp_heat(mat_sim,bedpe_file,region,chrom,N_beads,path):
     axs[1].set_ylabel('Simulation Signal',fontsize=16)
     axs[1].set_xlabel('Genomic Distance (with simumation beads as a unit)',fontsize=16)
     fig.savefig(path+'/plots/pearson.png',dpi=600)
+    fig.savefig(path+'/plots/pearson.pdf',dpi=600)
     fig.show()
 
     return pears

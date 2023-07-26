@@ -28,7 +28,7 @@ class MD_LE:
         self.N_coh, self.N_steps = M.shape
         self.N_beads, self.step, self.burnin = N_beads, MC_step, burnin
         self.path = path
-
+    
     def run_pipeline(self,run_MD=True,sim_step=10,write_files=False,plots=False):
         '''
         This is the basic function that runs the molecular simulation pipeline.
@@ -68,7 +68,7 @@ class MD_LE:
         # Run molecular dynamics simulation
         if run_MD:
             print('Running molecular dynamics (wait for 10 steps)...')
-            self.avg_heat,count = np.zeros((self.N_beads,self.N_beads)),0
+            heats = list()
             for i in range(1,self.N_steps):
                 for nn in range(self.N_coh):
                     le_force = self.LE_forces[nn]
@@ -79,20 +79,31 @@ class MD_LE:
                 simulation.step(sim_step)
                 if i%self.step==0 and i>self.burnin*self.step:
                     self.state = simulation.context.getState(getPositions=True)
-                    if write_files: PDBxFile.writeFile(pdb.topology, self.state.getPositions(), open(self.path+f'/pdbs/MDLE_{count}.cif', 'w'))
-                    save_path = self.path+f'/heatmaps/heat_{count}.svg' if write_files else None
-                    self.avg_heat += get_heatmap(self.state.getPositions(),save_path=save_path,save=write_files)
-                    count+=1
+                    if write_files: PDBxFile.writeFile(pdb.topology, self.state.getPositions(), open(self.path+f'/pdbs/MDLE_{i//self.step-self.burnin}.cif', 'w'))
+                    save_path = self.path+f'/heatmaps/heat_{i//self.step-self.burnin}.svg' if write_files else None
+                    heats.append(get_heatmap(self.state.getPositions(),save_path=save_path,save=write_files))
                     time.sleep(5)
 
             print('Everything is done bro! Simulation finished succesfully!')
 
-            self.avg_heat = self.avg_heat/count
+            self.avg_heat = np.average(heats,axis=0)
+            self.std_heat = np.std(heats,axis=0)
             np.save(self.path+f'/other/avg_heatmap.npy',self.avg_heat)
+            np.save(self.path+f'/other/std_heatmap.npy',self.std_heat)
             if plots:
                 figure(figsize=(10, 10))
                 plt.imshow(self.avg_heat,cmap="Reds",vmax=1)
-                plt.savefig(self.path+f'/plots/avg_bindist_heatmap.svg',format='svg',dpi=500)
+                plt.colorbar()
+                plt.savefig(self.path+f'/plots/avg_heatmap.svg',format='svg',dpi=500)
+                plt.savefig(self.path+f'/plots/avg_heatmap.pdf',format='pdf',dpi=500)
+                # plt.colorbar()
+                plt.show()
+
+                figure(figsize=(10, 10))
+                plt.imshow(self.std_heat,cmap="Reds",vmax=1)
+                plt.colorbar()
+                plt.savefig(self.path+f'/plots/std_heatmap.svg',format='svg',dpi=500)
+                plt.savefig(self.path+f'/plots/std_heatmap.pdf',format='pdf',dpi=500)
                 # plt.colorbar()
                 plt.show()
                 

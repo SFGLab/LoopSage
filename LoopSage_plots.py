@@ -4,19 +4,18 @@ import os
 import shutil
 import numpy as np
 import random as rd
+import pandas as pd
 import matplotlib.pyplot as plt
 from PIL import Image
 from sewar.full_ref import mse, rmse, psnr, uqi, ssim, ergas, scc, rase, sam, msssim, vifp
 from matplotlib.pyplot import figure
 from matplotlib.pyplot import cm
+import seaborn as sns
 from statsmodels.graphics.tsaplots import plot_acf
 import scipy.stats
 from LoopSage import *
 from tqdm import tqdm
 
-try:
-    os.mkdir(f'plots')
-except OSError as error: pass
 
 def draw_contact(c, y, start, end, lw=0.005, h=0.4):
     c.set_source_rgba(0.0, 1.0, 0.0, 0.5)
@@ -30,10 +29,10 @@ def draw_contact(c, y, start, end, lw=0.005, h=0.4):
 #     c.stroke()
 
 def draw_arcplot(ms, ns, N_beads,idx, lw_axis=0.005,axis_h=0.8,path=None):
-    save_path = path+"/plots/arcplots/" if path!=None else "/plots/arcplots/"
-    try:
-        os.mkdir(save_path)
-    except OSError as error: pass
+    if path!=None:
+        save_path = path+"/plots/arcplots/"
+    else:
+        raise(InterruptedError('You want video but you did not choose save path. This function cannot work without save path.'))
 
     with cairo.SVGSurface(save_path+f"arcplot_{idx}.svg", 800, 400) as surface:
         c = cairo.Context(surface)
@@ -68,6 +67,24 @@ def draw_arcplot(ms, ns, N_beads,idx, lw_axis=0.005,axis_h=0.8,path=None):
         surface.write_to_png(save_path+f'arcplot_{idx}.png')
         os.remove(save_path+f"arcplot_{idx}.svg")
 
+def make_loop_hist(Ms,Ns,path=None):
+    Ls = np.abs(Ns-Ms).flatten()
+    Ls_df = pd.DataFrame(Ls)
+    figure(figsize=(10, 7), dpi=600)
+    sns.histplot(data=Ls_df, bins=30,  kde=True,stat='density')
+    plt.grid()
+    plt.legend()
+    plt.ylabel('Probability',fontsize=16)
+    plt.xlabel('Loop Length',fontsize=16)
+    if path!=None:
+        save_path = path+'/plots/loop_length.png'
+        plt.savefig(save_path,format='png',dpi=200)
+        save_path = path+'/plots/loop_length.svg'
+        plt.savefig(save_path,format='svg',dpi=600)
+        save_path = path+'/plots/loop_length.pdf'
+        plt.savefig(save_path,format='pdf',dpi=600)
+    plt.show()
+
 def make_gif(N,path=None):
     with imageio.get_writer('plots/arc_video.gif', mode='I') as writer:
         for i in range(N):
@@ -91,8 +108,14 @@ def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
     # plt.yscale('symlog')
     plt.legend(['Total Energy', 'Binding', 'Knotting', 'Folding'], fontsize=16)
     plt.grid()
-    save_path = path+'/plots/energies.png' if path!=None else 'energies.png'
-    plt.savefig(save_path,dpi=200)
+
+    if path!=None:
+        save_path = path+'/plots/energies.png'
+        plt.savefig(save_path,format='png',dpi=200)
+        save_path = path+'/plots/energies.svg'
+        plt.savefig(save_path,format='svg',dpi=200)
+        save_path = path+'/plots/energies.pdf'
+        plt.savefig(save_path,format='pdf',dpi=600)
     plt.show()
 
     # Autocorrelation plot
@@ -100,8 +123,13 @@ def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
     plt.ylabel("Autocorrelations", fontsize=16)
     plt.xlabel("Lags", fontsize=16)
     plt.grid()
-    save_path = path+'/plots/autoc.png' if path!=None else 'autoc.png'
-    plt.savefig(save_path,dpi=200)
+    if path!=None: 
+        save_path = path+'/plots/autoc.png'
+        plt.savefig(save_path,dpi=200)
+        save_path = path+'/plots/autoc.svg'
+        plt.savefig(save_path,format='svg',dpi=200)
+        save_path = path+'/plots/autoc.pdf'
+        plt.savefig(save_path,format='pdf',dpi=200)
     plt.show()
 
 def make_moveplots(unbinds, slides, path=None):
@@ -116,8 +144,11 @@ def make_moveplots(unbinds, slides, path=None):
     # plt.yscale('symlog')
     plt.legend(['Rebinding', 'Sliding'], fontsize=16)
     plt.grid()
-    save_path = path+'/plots/moveplot.png' if path!=None else 'moveplot.png'
-    plt.savefig(save_path,dpi=600)
+    if path!=None:
+        save_path = path+'/plots/moveplot.png'
+        plt.savefig(save_path,dpi=600)
+        save_path = path+'/plots/moveplot.pdf'
+        plt.savefig(save_path,dpi=600)
     plt.show()
 
 def temperature_biff_diagram(T_range, f=-500, b=-200,N_beads=500,N_coh=50, kappa=10000, file='CTCF_hg38_PeakSupport_2.bedpe'):
@@ -139,55 +170,127 @@ def temperature_biff_diagram(T_range, f=-500, b=-200,N_beads=500,N_coh=50, kappa
     plt.legend(['Binding','Folding', 'Unfolding'], fontsize=16)
     plt.grid()
     plt.savefig('temp_bif_plot.png',dpi=600)
+    plt.savefig('temp_bif_plot.pdf',dpi=600)
     plt.show()
 
     return Knots, Bins, Folds
 
-def temperature_T_Ncoh_diagram(T_range, Ncoh_range=np.array([10,25,50,70]), f=-100, b=-100, kappa=20000, N_beads=500, file='/mnt/raid/data/Trios/bedpe/hiccups_loops_sqrtVC_norm/hg00731_ctcf_vc_sqrt_merged_loops_edited_2.bedpe'):
-    colors = ['red','green','purple','cyan']
-    figure(figsize=(12, 8), dpi=600)
-    for j, N_coh in enumerate(Ncoh_range):
+def temperature_T_Ncoh_diagram(T_range, Ncoh_range=np.array([10,25,50,100]), f=-1000, b=-1000, kappa=100000, N_beads=1000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
+    colors = ['red','green','magenta','blue']
+    figure(figsize=(10, 6), dpi=600)
+    for j, N_coh in tqdm(enumerate(Ncoh_range)):
+        save_path = make_folder(N_beads,N_coh,[178421513, 179491193],'chr1',label='biff_diags')
         Bins, Knots, Folds, UFs = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
+        errFolds, errUFs = np.zeros(len(T_range)), np.zeros(len(T_range))
         for i, T in enumerate(T_range):
-            L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N_beads,[40000000,45000000],'chr3',False)
-            N_CTCF = (np.count_nonzero(L)+np.count_nonzero(R))/2
-            print('Number of CTCF:',N_CTCF)
-            sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists)
-            Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=2000,MC_step=10,T=T,burnin=100,mode='Metropolis',viz=False)
-            Bins[i], Knots[i], Folds[i], UFs[i] = np.average(Bs[100:]), np.average(Ks[100:]), np.average(Fs[100:]), np.average(ufs[100:])
-        
+            L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N_beads,[178421513, 179491193],'chr1',False)
+            sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,save_path)
+            Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=10000,MC_step=100,T=T,burnin=10,mode='Metropolis',viz=False)
+            Bins[i], Knots[i], Folds[i], UFs[i] = np.average(Bs[10:]), np.average(Ks[10:]), np.average(Fs[10:])/f, np.average(ufs[10:])
+            errFolds[i], errUFs[i] = np.abs(np.std(Fs[10:])/f), np.std(ufs[10:])
         c = colors[j]
         N_CTCF = (np.count_nonzero(L)+np.count_nonzero(R))/2
-        plt.plot(T_range,np.abs(Folds),'-',label=f'Ncoh={N_coh}',c=c)
-        plt.plot(T_range,np.abs(UFs),'--',c=c)
+        plt.errorbar(T_range,np.abs(Folds),yerr=errFolds,fmt='o-',label=f'Ncoh={N_coh}',color=c)
+        plt.errorbar(T_range,np.abs(UFs),yerr=errUFs,fmt='o--',color=c)
     print('Number of CTCF:',N_CTCF)
-    plt.ylabel('Metrics', fontsize=18)
-    plt.xlabel('Temperature', fontsize=18)
+    plt.ylabel('Metrics', fontsize=16)
+    plt.xlabel('Temperature', fontsize=16)
     # plt.yscale('symlog')
-    plt.legend(fontsize=16)
-    plt.grid()
-    plt.savefig(f'Ncoh_temp_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}.png',dpi=600)
+    plt.legend(fontsize=13)
+    # plt.grid()
+    plt.savefig(f'Ncoh_temp_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}.pdf',format='pdf',dpi=600)
+    plt.savefig(f'Ncoh_temp_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}.png',format='png',dpi=600)
+    plt.savefig(f'Ncoh_temp_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}.svg',format='svg',dpi=600)
     plt.show()
     
-    return Knots, Bins, Folds
+    return Knots, Bins, Folds, UFs
 
-def Nbeads_diagram(Nbs, N_coh=20, T=1, f=-100, b=-100, kappa=20000, file='/mnt/raid/data/Trios/bedpe/hiccups_loops_sqrtVC_norm/hg00731_ctcf_vc_sqrt_merged_loops_edited_2.bedpe'):
+def temperature_loop_distplot(T_range, N_coh=50, f=-1000, b=-1000, kappa=100000, N_beads=1000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
+    colors = ['red','green','magenta','blue']
+    df = pd.DataFrame()
+
+    for i, T in enumerate(T_range):
+        L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N_beads,[178421513, 179491193],'chr1',False)
+        sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,None)
+        Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=10000,MC_step=100,T=T,burnin=10,mode='Metropolis',viz=False)
+        df[f'T={T}'] = np.abs(Ns-Ms).flatten()
+
+    figure(figsize=(8, 6), dpi=600)
+    sns.histplot(data=df,bins=10,kde=True, element="step")
+    plt.ylabel('Probability',fontsize=13)
+    plt.xlabel('Loop Length',fontsize=13)
+    plt.savefig('temp_loop_length.png',format='png',dpi=600)
+    plt.savefig('temp_loop_length.svg',format='svg',dpi=600)
+    plt.savefig('temp_loop_length.pdf',format='pdf',dpi=600)
+    plt.show()
+
+def fb_loop_distplot(fbs, N_coh=50, T=5, kappa=100000, N_beads=1000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
+    colors = ['red','green','magenta','blue']
+    df = pd.DataFrame()
+
+    for fb in fbs:
+        L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N_beads,[178421513, 179491193],'chr1',False)
+        sim = LoopSage(N_beads,N_coh,kappa,fb,fb,L,R,dists,None)
+        Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=10000,MC_step=100,T=T,burnin=10,mode='Metropolis',viz=False)
+        df[f'f=b={fb}'] = np.abs(Ns-Ms).flatten()
+
+    figure(figsize=(8, 6), dpi=600)
+    sns.histplot(data=df,bins=10,kde=True, element="step")
+    plt.ylabel('Probability',fontsize=13)
+    plt.xlabel('Loop Length',fontsize=13)
+    plt.savefig('fb_loop_length.png',format='png',dpi=600)
+    plt.savefig('fb_loop_length.svg',format='svg',dpi=600)
+    plt.savefig('fb_loop_length.pdf',format='pdf',dpi=600)
+    plt.show()
+
+def knot_T_diagram(T_range, kappas, N_coh=10, f=-1000, b=-1000, N_beads=1000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
+    colors = ['red','green','magenta','blue']
+    figure(figsize=(10, 6), dpi=600)
+    for j, kappa in tqdm(enumerate(kappas)):
+        save_path = make_folder(N_beads,N_coh,[178421513, 179491193],'chr1',label='biff_diags')
+        Bins, Knots, Folds, UFs, Kappas = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
+        errFolds, errUFs, errKs = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
+        for i, T in enumerate(T_range):
+            L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N_beads,[178421513, 179491193],'chr1',False)
+            sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,save_path)
+            Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=10000,MC_step=100,T=T,burnin=10,mode='Metropolis',viz=False)
+            Bins[i], Knots[i], Folds[i], UFs[i], Kappas[i] = np.average(Bs[10:]), np.average(Ks[10:]), np.average(Fs[10:])/f, np.average(ufs[10:]), np.average(Ks[10:])/kappa
+            errFolds[i], errUFs[i], errKs[i] = np.abs(np.std(Fs[10:])/f), np.std(ufs[10:]), np.std(Ks[10:])/kappa
+        c = colors[j]
+        
+        plt.errorbar(T_range,np.abs(Folds),yerr=errFolds,marker='o',ls='solid',label=rf'$\kappa$={kappa}',color=c)
+        plt.errorbar(T_range,np.abs(UFs),marker='>',ls='dashed',yerr=errUFs,color=c)
+        plt.errorbar(T_range,np.abs(Kappas),marker='x',ls='dotted',yerr=errKs,color=c)
+    N_CTCF = (np.count_nonzero(L)+np.count_nonzero(R))/2
+    print('Number of CTCF:',N_CTCF)
+    plt.ylabel('Metrics', fontsize=16)
+    plt.xlabel('Temperature', fontsize=16)
+    plt.legend(fontsize=13)
+    plt.savefig(f'kappa_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}_Ncoh_{N_coh}.pdf',format='pdf',dpi=600)
+    plt.savefig(f'kappa_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}_Ncoh_{N_coh}.png',format='png',dpi=600)
+    plt.savefig(f'kappa_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}_Ncoh_{N_coh}.svg',format='svg',dpi=600)
+    plt.show()
+
+def Nbeads_diagram(Nbs, N_coh=50, T=5, f=-1000, b=-1000, kappa=100000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
     Folds, UFs = np.zeros(len(Nbs)), np.zeros(len(Nbs))
-    figure(figsize=(12, 8), dpi=600)
+    errFolds, errUFs = np.zeros(len(Nbs)), np.zeros(len(Nbs))
+    figure(figsize=(10, 6), dpi=600)
     for i, N in enumerate(Nbs):
-        L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N,[40000000,45000000],'chr3',False)
-        sim = LoopSage(N,N_coh,kappa,f,b,L,R,dists)
-        Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=2000,MC_step=10,T=T,burnin=100,mode='Metropolis',viz=False)
-        Folds[i], UFs[i] = np.average(Fs[100:]), np.average(ufs[100:])
+        save_path = make_folder(N,N_coh,[178421513, 179491193],'chr1',label='biff_diags')
+        L, R, dists = binding_vectors_from_bedpe_with_peaks(file,int(N),[178421513, 179491193],'chr1',False)
+        sim = LoopSage(N,N_coh,kappa,f,b,L,R,dists,save_path)
+        Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=10000,MC_step=100,T=T,burnin=10,mode='Metropolis',viz=False)
+        Folds[i], UFs[i] = np.average(Fs[10:])/f, np.average(ufs[10:])
+        errFolds[i], errUFs[i] = np.abs(np.std(Fs[10:])/f), np.std(ufs[10:])
 
-    plt.plot(Nbs,np.abs(Folds),'k-')
-    plt.plot(Nbs,np.abs(UFs),'k--')
-    plt.xlabel(r'$N_{beads}$', fontsize=18)
-    plt.ylabel('Metrics', fontsize=18)
+    plt.errorbar(Nbs,np.abs(Folds),yerr=errFolds,fmt='o-',color='black')
+    plt.errorbar(Nbs,np.abs(UFs),yerr=errUFs,fmt='o--',color='black')
+    plt.xlabel(r'$N_{beads}$', fontsize=16)
+    plt.ylabel('Metrics', fontsize=16)
     plt.legend(['Folding','Proportion of Gaps'],fontsize=16)
-    # plt.yscale('symlog')
-    plt.grid()
-    plt.savefig('Nbeads_plot.png',dpi=600)
+    plt.savefig('Nbeads_plot.pdf',format='pdf',dpi=600)
+    plt.savefig('Nbeads_plot.png',format='png',dpi=600)
+    plt.savefig('Nbeads_plot.svg',format='svg',dpi=600)
     plt.show()
 
 def fb_heatmap(fs,bs,T,N_beads=500,N_coh=20,kappa=200000,file='/mnt/raid/data/Trios/bedpe/hiccups_loops_sqrtVC_norm/hg00731_ctcf_vc_sqrt_merged_loops_edited_2.bedpe'):
@@ -197,7 +300,7 @@ def fb_heatmap(fs,bs,T,N_beads=500,N_coh=20,kappa=200000,file='/mnt/raid/data/Tr
         for j,b in enumerate(bs):
             L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N_beads,[48100000,58700000],'chr3',False)
             sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists)
-            Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=2000,MC_step=10,T=T,burnin=100,mode='Metropolis',viz=False)
+            Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=2000,MC_step=10,T=T,burnin=100,mode='Metropolis',viz=True)
             fold_mat[i,j] = np.average(Fs[100:])
             ufold_mat[i,j] = np.average(ufs[100:])
 
@@ -206,7 +309,7 @@ def fb_heatmap(fs,bs,T,N_beads=500,N_coh=20,kappa=200000,file='/mnt/raid/data/Tr
     plt.xlabel('b',fontsize=16)
     plt.ylabel('f',fontsize=16)
     plt.colorbar()
-    plt.savefig(f'fold_heat_T{T}.png',dpi=600)
+    plt.savefig(f'fold_heat_T{T}.pdf',format='pdf',dpi=600)
     plt.show()
 
     figure(figsize=(12, 12), dpi=600)
@@ -214,7 +317,7 @@ def fb_heatmap(fs,bs,T,N_beads=500,N_coh=20,kappa=200000,file='/mnt/raid/data/Tr
     plt.xlabel('b',fontsize=16)
     plt.ylabel('f',fontsize=16)
     plt.colorbar()
-    plt.savefig(f'ufold_heat_T{T}.png',dpi=600)
+    plt.savefig(f'ufold_heat_T{T}.pdf',format='pdf',dpi=600)
     plt.show()
 
 def average_pooling(mat,dim_new):
@@ -223,7 +326,7 @@ def average_pooling(mat,dim_new):
     im_resized = np.array(im.resize(size))
     return im_resized
 
-def correlation_plot(given_heatmap,T_range):
+def correlation_plot(given_heatmap,T_range,path):
     pearsons, spearmans, kendals = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
     exp_heat_dim = len(given_heatmap)
     for i, T in enumerate(T_range):
@@ -231,7 +334,7 @@ def correlation_plot(given_heatmap,T_range):
         N_steps, MC_step, burnin = int(1e4), int(1e2), 20
         L, R = binding_vectors_from_bedpe_with_peaks("/mnt/raid/data/Zofia_Trios/bedpe/hg00731_CTCF_pulled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
         sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R)
-        Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Metropolis',viz=False,vid=False)
+        Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Metropolis',viz=True,vid=False)
         md = MD_LE(Ms,Ns,N_beads,burnin,MC_step)
         heat = md.run_pipeline(write_files=False,plots=False)
         if N_beads>exp_heat_dim:
@@ -256,7 +359,8 @@ def correlation_plot(given_heatmap,T_range):
     # plt.yscale('symlog')
     plt.legend(['Pearson','Spearman','Kendall Tau'])
     plt.grid()
-    plt.savefig('pearson_plot.png',dpi=600)
+    save_path = path+'/plots/pearson_plot.pdf' if path!=None else 'pearson_plot.pdf'
+    plt.savefig(save_path,dpi=600)
     plt.show()
 
 def coh_traj_plot(ms,ns,N_beads,path):
@@ -274,6 +378,8 @@ def coh_traj_plot(ms,ns,N_beads,path):
     plt.gca().invert_yaxis()
     save_path = path+'/plots/coh_trajectories.png' if path!=None else 'coh_trajectories.png'
     plt.savefig(save_path, format='png', dpi=200)
+    save_path = path+'/plots/coh_trajectories.svg' if path!=None else 'coh_trajectories.svg'
+    plt.savefig(save_path, format='svg', dpi=600)
     save_path = path+'/plots/coh_trajectories.pdf' if path!=None else 'coh_trajectories.pdf'
     plt.savefig(save_path, format='pdf', dpi=600)
     plt.show()
@@ -310,5 +416,7 @@ def stochastic_heatmap(ms,ns,step,L,path,comm_prop=True,fill_square=True):
     plt.imshow(avg_mat,cmap="Reds",vmax=np.average(avg_mat)+3*np.std(avg_mat))
     save_path = path+f'/plots/stochastic_heatmap.svg' if path!=None else 'stochastic_heatmap.svg'
     plt.savefig(save_path,format='svg',dpi=500)
-    plt.colorbar()
+    save_path = path+f'/plots/stochastic_heatmap.pdf' if path!=None else 'stochastic_heatmap.pdf'
+    plt.savefig(save_path,format='pdf',dpi=500)
+    # plt.colorbar()
     plt.show()

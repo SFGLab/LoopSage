@@ -7,7 +7,7 @@ import pyBigWig
 import os
 from matplotlib.pyplot import figure
 
-def binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,normalization=False):
+def binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,normalization=False,viz=False):
     # Read file and select the region of interest
     df = pd.read_csv(bedpe_file,sep='\t',header=None)
     df = df[(df[1]>=region[0])&(df[5]<=region[1])&(df[0]==chrom)].reset_index(drop=True)
@@ -31,17 +31,31 @@ def binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,normal
     if normalization:
         L, R = L/np.sum(L), R/np.sum(R)
 
-    # sns.histplot(distances, kde=True, bins=100)
-    # plt.ylabel('Count')
-    # plt.xlabel('Loop Size')
-    # plt.grid()
-    # plt.show()
+    if viz:
+        sns.histplot(distances, kde=True, bins=100)
+        plt.ylabel('Count')
+        plt.xlabel('Loop Size')
+        plt.grid()
+        plt.show()
 
-    print('Average loop size:', np.average(distances))
-    print('Median loop size:', np.median(distances))
-    print('Maximum loop size:', np.max(distances))
+        fig, axs = plt.subplots(2, figsize=(15, 10))
+        axs[0].plot(L,'g-')
+        axs[0].set_ylabel('Left potential',fontsize=16)
+        axs[1].plot(R,'r-')
+        axs[1].set_ylabel('Right potential',fontsize=16)
+        axs[1].set_xlabel('Genomic Distance (with simumation beads as a unit)',fontsize=16)
+        fig.show()
+
+        print('Average loop size:', np.average(distances))
+        print('Median loop size:', np.median(distances))
+        print('Maximum loop size:', np.max(distances))
 
     return L, R, distances
+
+def get_rnap_energy(path,region,chrom,N_beads,normalization):
+    signal = load_track(path,region,chrom,N_beads)
+    if normalization: signal = signal/np.sum(signal)
+    return signal
 
 def binding_matrix_from_bedpe(bedpe_file,N_beads,region,chrom,normalization=False):
     # Read file and select the region of interest
@@ -99,12 +113,12 @@ def bw_to_array(bw, region, chrom, N_beads, viz=False):
     bw_array_new = list()
     for i in range(step,len(bw_array)+1,step):
         bw_array_new.append(np.average(bw_array[(i-step):i]))
-    weights = (np.roll(np.array(bw_array_new)[:-1],1)+np.roll(np.array(bw_array_new)[:-1],-1))/2
+    weights = (np.roll(np.array(bw_array_new),5)+np.roll(np.array(bw_array_new),-5))/2
     if viz:
         figure(figsize=(15, 5))
         plt.plot(weights)
         plt.grid()
-        plt.title('Cohesin reloading weights',fontsize=20)
+        plt.title('ChIP-Seq signal',fontsize=20)
         plt.show()
     
     return weights

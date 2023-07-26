@@ -14,10 +14,6 @@ from LoopSage_preproc import *
 from LoopSage_plots import *
 from LoopSage_md import *
 
-def delta(x1,x2):
-    d = 1 if x1==x2 else 0
-    return d
-
 def Kappa(mi,ni,mj,nj):
     k=0
     if mi<mj and mj<ni and ni<nj: k+=1 # np.abs(ni-mj)+1
@@ -26,17 +22,17 @@ def Kappa(mi,ni,mj,nj):
     return k
 
 class LoopSage:
-    def __init__(self,N_beads,N_coh,kappa,f,b,L,R,dists,path,track=None):
+    def __init__(self,N_beads,N_coh,kappa,f,b,L,R,dists,r=None,RNAP=None,path=None,track=None):
         self.N_beads, self.N_coh, self.N_CTCF = N_beads, N_coh, np.max([np.count_nonzero(L),np.count_nonzero(R)])
         self.kappa, self.f, self.b = kappa, f, b
         self.L, self.R = L, R
+        self.RNAP, self.r = RNAP, r
         self.states = np.full(self.N_beads,False)
         self.dists = np.array(dists)
         self.track = track
         self.avg_loop, self.max_loop = int(np.average(self.dists))+1, int(np.max(self.dists))+1
         self.log_avg_loop = np.average(np.log(self.dists+1))
         self.path=path
-        print('Average logarithmic loop size',self.log_avg_loop)
         self.params = stats.maxwell.fit(self.dists)
         self.loop_pdist = stats.maxwell.pdf(np.arange(self.N_beads), *self.params)
     
@@ -46,6 +42,13 @@ class LoopSage:
             binding += self.L[ms[i]]+self.R[ns[i]] #if self.b_mode=='vector' else self.M[ms[i],ns[i]]
         E_b = self.b*binding/(np.sum(self.L)+np.sum(self.R)) #if self.b_mode=='vector' else self.b*binding/np.sum(self.M)
         return E_b
+    
+    def E_rnap(self,ms,ns):
+        rnap = 0
+        for i in range(self.N_coh):
+            rnap += self.RNAP[ms[i]]+self.RNAP[ns[i]] #if self.b_mode=='vector' else self.M[ms[i],ns[i]]
+        E_rnap = self.r*rnap/np.sum(self.RNAP)
+        return E_rnap
 
     def E_knot(self,ms,ns):
         knotting = 0
@@ -61,12 +64,16 @@ class LoopSage:
         return self.f*folding/(self.N_coh*self.log_avg_loop)
     
     def get_E(self,ms,ns):
-        energy=self.E_bind(ms,ns)+self.E_knot(ms,ns)+self.E_fold(ms,ns)
+        if np.any(self.RNAP==None):
+            energy=self.E_bind(ms,ns)+self.E_knot(ms,ns)+self.E_fold(ms,ns)
+        else:
+            energy=self.E_bind(ms,ns)+self.E_knot(ms,ns)+self.E_fold(ms,ns)+self.E_rnap(ms,ns)
         return energy
 
     def get_dE(self,ms,ns,m_new,n_new,idx):
         dE_bind = self.b*(self.L[m_new]+self.R[n_new]-self.L[ms[idx]]-self.R[ns[idx]])/(np.sum(self.L)+np.sum(self.R)) #if self.b_mode=='vector' else self.b*(self.M[m_new,n_new]-self.M[ms[idx],ns[idx]])/np.sum(self.M)
         dE_fold = self.f*(np.log(n_new-m_new)-np.log(ns[idx]-ms[idx]))/(self.N_coh*np.log(self.avg_loop))
+        if np.all(self.RNAP!=None): dE_rnap = self.r*(self.RNAP[m_new]+self.RNAP[n_new]-self.RNAP[ms[idx]]-self.RNAP[ns[idx]])/(np.sum(self.RNAP))
         # dE_dfold = self.Ti*self.f*(self.loop_pdist[n_new-m_new]-self.loop_pdist[ns[idx]-ms[idx]])/(self.N_coh*self.loop_pdist[self.avg_loop])
 
         K1, K2 = 0, 0
@@ -76,14 +83,17 @@ class LoopSage:
             if i!=idx: K2+=Kappa(m_new,n_new,ms[i],ns[i])
         dE_knot = self.kappa*(K2-K1)/self.N_coh
 
-        dE = dE_bind+dE_fold+dE_knot
+        if np.all(self.RNAP!=None):
+            dE = dE_bind+dE_fold+dE_knot+dE_rnap
+        else:
+            dE = dE_bind+dE_fold+dE_knot
         return dE
 
     def unfolding_metric(self,ms,ns):
         fiber = np.zeros(self.N_beads)
         for i in range(self.N_coh):
             fiber[ms[i]:ns[i]]=1
-        unfold = self.log_avg_loop*(self.N_beads-np.count_nonzero(fiber))/self.N_beads
+        unfold = 2*(self.N_beads-np.count_nonzero(fiber))/self.N_beads
         return unfold
     
     def unbind_bind(self):
@@ -125,9 +135,10 @@ class LoopSage:
         Es,Ks,Fs,Bs,ufs, slides, unbinds = list(),list(),list(),list(),list(), list(), list()
         Ms, Ns = np.zeros((self.N_coh,N_steps)).astype(int), np.zeros((self.N_coh,N_steps)).astype(int)
         N_slide, N_bind = 0, 0
+        if viz: print('Average logarithmic loop size',self.log_avg_loop)
 
-        # print('Running simulation...')
-        for i in tqdm(range(N_steps)):
+        if viz: print('Running simulation...')
+        for i in tqdm(range(N_steps),disable=(not viz)):
             for j in range(self.N_coh):
                 # Randomly choose a move (sliding or rebinding)
                 r = rd.choice([0,1,2])
@@ -165,37 +176,40 @@ class LoopSage:
                 unbinds.append(N_bind)
 
                 N_slide, N_bind = 0, 0
-        print('Done! ;D')
+        if viz: print('Done! ;D')
         
         # Some vizualizations
-        save_info(self.N_beads,self.N_coh,self.N_CTCF,self.kappa,self.f,self.b,self.avg_loop,self.path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs)
+        if self.path!=None: save_info(self.N_beads,self.N_coh,self.N_CTCF,self.kappa,self.f,self.b,self.avg_loop,self.path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs)
         if viz: make_timeplots(Es, Bs, Ks, Fs, burnin, self.path)
         if viz: make_moveplots(unbinds, slides, self.path)
         if viz: coh_traj_plot(Ms,Ns,self.N_beads, self.path)
         if viz: stochastic_heatmap(Ms,Ns,MC_step,self.N_beads,self.path)
+        if viz: make_loop_hist(Ms,Ns,self.path)
         if vid: make_gif(N_steps//MC_step, self.path)
         
         return Es, Ms, Ns, Bs, Ks, Fs, ufs
 
 def main():
-    N_beads,N_coh,kappa,f,b = 1000,50,20000,-1000,-1000
-    N_steps, MC_step, burnin, T = int(1e4), int(1e2), 10, 5
-    region, chrom = [225286830, 225996745], 'chr1'
+    N_beads,N_coh,kappa,f,b,r = 1000,50,10000,-1000,-1000,-1000
+    N_steps, MC_step, burnin, T = int(5e3), int(1e2), 10, 5
+    region, chrom = [178521513, 179391193], 'chr1'
+    rnap_file = "/mnt/raid/data/encode/ChIP-Seq/ENCSR000EAD_POLR2A/ENCFF262GJK_pval_rep2.bigWig"
     bedpe_file = "/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe"
-    L, R, dists = binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,False)
-    track = load_track('/mnt/raid/data/encode/ChIP-Seq/ENCSR000DZP_Smc3/ENCFF775OOS_pvalue.bigWig',region,chrom,N_beads,True)
+    L, R, dists = binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,False,True)
+    rna_track = load_track(file=rnap_file,region=region,chrom=chrom,N_beads=N_beads,viz=True)
+    # track = load_track('/mnt/raid/data/encode/ChIP-Seq/ENCSR000DZP_Smc3/ENCFF775OOS_pvalue.bigWig',region,chrom,N_beads,True)
     # M = binding_matrix_from_bedpe("/mnt/raid/data/Trios/bedpe/interactions_maps/hg00731_CTCF_pooled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
     print('Number of CTCF:',np.max([np.count_nonzero(L),np.count_nonzero(R)]))
     path = make_folder(N_beads,N_coh,region,chrom,label='ChIA_PET_ENCSR184YZV_CTCF')
-    sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,path,track)
+    sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,r,rna_track,path,None)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Annealing',viz=True,vid=False)
     np.save(path+'/other/Ms.npy',Ms)
     np.save(path+'/other/Ns.npy',Ns)
     np.save(path+'/other/Fs.npy',Fs)
     np.save(path+'/other/Bs.npy',Bs)
-    # md = MD_LE(Ms,Ns,N_beads,burnin,MC_step,path)
-    # sim_heat = md.run_pipeline(write_files=True,plots=True)
-    # corr_exp_heat(sim_heat,bedpe_file,region,chrom,N_beads,path)
+    md = MD_LE(Ms,Ns,N_beads,burnin,MC_step,path)
+    sim_heat = md.run_pipeline(write_files=True,plots=True)
+    corr_exp_heat(sim_heat,bedpe_file,region,chrom,N_beads,path)
 
 if __name__=='__main__':
     main()
