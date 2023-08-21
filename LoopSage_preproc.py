@@ -8,6 +8,21 @@ import os
 from matplotlib.pyplot import figure
 
 def binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,normalization=False,viz=False):
+    '''
+    Definition of left and right CTCF binding potential.
+
+    Input:
+    bedpe_file (str): path with bepde file with loops
+    region (list): a list with two integers [start,end], which represent the start and end point of the region of interest.
+    chrom (str): chromosome of interest.
+    normalization (bool): in case that it is needed to normalize to numpy arrays that represent left and right CTCF binding potential.
+    viz (bool): If True is vizualizes the distribution of distances of loops from the diagonal and the binding potentials as functions of simulated polymer distance.
+
+    Output:
+    L (numpy array): left CTCF binding potential.
+    R (numpy array): right CTCF binding potential.
+    dists (numpy array): distances of CTCF loops from the diagonal.
+    '''
     # Read file and select the region of interest
     df = pd.read_csv(bedpe_file,sep='\t',header=None)
     df = df[(df[1]>=region[0])&(df[5]<=region[1])&(df[0]==chrom)].reset_index(drop=True)
@@ -53,11 +68,34 @@ def binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,normal
     return L, R, distances
 
 def get_rnap_energy(path,region,chrom,N_beads,normalization):
+    '''
+    For the RNApII potential.
+
+    Input:
+    path (str): path with bw file that determines RNApII binding.
+    region (list): a list with two integers [start,end], which represent the start and end point of the region of interest.
+    chrom (str): chromosome of interest.
+    normalization (bool): in case that it is needed to normalize to numpy arrays that represent RNApII binding potential.
+    '''
     signal = load_track(path,region,chrom,N_beads)
     if normalization: signal = signal/np.sum(signal)
     return signal
 
 def binding_matrix_from_bedpe(bedpe_file,N_beads,region,chrom,normalization=False):
+    '''
+    Definition of CTCF binding matrix.
+
+    Input:
+    bedpe_file (str): path with bepde file with loops
+    region (list): a list with two integers [start,end], which represent the start and end point of the region of interest.
+    chrom (str): chromosome of interest.
+    normalization (bool): in case that it is needed to normalize to numpy arrays that represent CTCF binding matrix.
+
+    Output:
+    M (numpy array): CTCF binding matrix.
+    dists (numpy array): distances of CTCF loops from the diagonal.
+    '''
+    
     # Read file and select the region of interest
     df = pd.read_csv(bedpe_file,sep='\t',header=None)
     df = df[(df[1]>=region[0])&(df[5]<=region[1])&(df[0]==chrom)].reset_index(drop=True)

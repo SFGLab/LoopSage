@@ -32,6 +32,12 @@ class MD_LE:
     def run_pipeline(self,run_MD=True,sim_step=10,write_files=False,plots=False):
         '''
         This is the basic function that runs the molecular simulation pipeline.
+
+        Input parameters:
+        run_MD (bool): True if user wants to run molecular simulation (not only energy minimization).
+        sim_step (int): the simulation step of Langevin integrator.
+        write_files (bool): True if the user wants to save the structures that determine the simulation ensemble.
+        plots (bool): True if the user wants to see the output average heatmaps.
         '''
         # Define initial structure
         print('Building initial structure...')
@@ -111,6 +117,15 @@ class MD_LE:
             return self.avg_heat
 
     def add_forcefield(self):
+        '''
+        Here is the definition of the forcefield.
+
+        There are the following energies:
+        - ev force: repelling LJ-like forcefield
+        - harmonic bond force: to connect adjacent beads.
+        - angle force: for polymer stiffness.
+        - LE forces: this is a list of force objects. Each object corresponds to a different cohesin. It is needed to define a force for each time step.
+        '''
         # Leonard-Jones potential for excluded volume
         ev_force = mm.CustomNonbondedForce('epsilon*((sigma1+sigma2)/r)')
         ev_force.addGlobalParameter('epsilon', defaultValue=10)
