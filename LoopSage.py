@@ -224,7 +224,7 @@ class LoopSage:
                     N_slide+=1
 
                 # Compute energy difference
-                self.Ti = (T-(i+1)/N_steps) if mode=='Annealing' else T
+                self.Ti = T*(1-(i+1)/N_steps) if mode=='Annealing' else T
                 dE = self.get_dE(ms,ns,m_new,n_new,j)
 
                 if dE <= 0 or np.exp(-dE/self.Ti) > np.random.rand():
@@ -262,18 +262,18 @@ class LoopSage:
 
 def main():
     N_beads,N_coh,kappa,f,b,r = 1000,50,20000,-1000,-1000,-1000
-    N_steps, MC_step, burnin, T = int(1e4), int(1e2), 10, 5
-    region, chrom = [212470553,213427421], 'chr2'
-    rnap_file = "/mnt/raid/data/encode/ChIP-Seq/ENCSR000EAD_POLR2A/ENCFF262GJK_pval_rep2.bigWig"
+    N_steps, MC_step, burnin, T = int(1e4), int(1e2), 10, 10
+    region, chrom = [178421513, 179491193], 'chr1'
+    # rnap_file = "/mnt/raid/data/encode/ChIP-Seq/ENCSR000EAD_POLR2A/ENCFF262GJK_pval_rep2.bigWig"
     # bedpe_file = "/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe"
-    bedpe_file = '/mnt/raid/data/Anup/method_paper/Predicted_chr2_212470553_213427421_corrected_2.bedpe'
+    bedpe_file = '/mnt/raid/data/Karolina_HiChIP/interactions_maps/hg00731_smc1_pulled_2.bedpe'
     L, R, dists = binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,False,True)
-    rna_track = load_track(file=rnap_file,region=region,chrom=chrom,N_beads=N_beads,viz=True)
-    # track = load_track('/mnt/raid/data/encode/ChIP-Seq/ENCSR000DZP_Smc3/ENCFF775OOS_pvalue.bigWig',region,chrom,N_beads,True)
+    # rna_track = load_track(file=rnap_file,region=region,chrom=chrom,N_beads=N_beads,viz=True)
+    track = load_track('/mnt/raid/data/Karolina_HiChIP/coverage/hg00731_smc1_pulled.bw',region,chrom,N_beads,True)
     # M = binding_matrix_from_bedpe("/mnt/raid/data/Trios/bedpe/interactions_maps/hg00731_CTCF_pooled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
     print('Number of CTCF:',np.max([np.count_nonzero(L),np.count_nonzero(R)]))
-    path = make_folder(N_beads,N_coh,region,chrom,label='ChIA_PET_ENCSR184YZV_CTCF')
-    sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,r,None,path,None)
+    path = make_folder(N_beads,N_coh,region,chrom,label='HiCHIP_hg00731_Smc')
+    sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,r,None,path,track)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Annealing',viz=True,vid=False)
     np.save(path+'/other/Ms.npy',Ms)
     np.save(path+'/other/Ns.npy',Ns)
