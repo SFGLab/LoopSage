@@ -187,7 +187,7 @@ class LoopSage:
             ms[i], ns[i] = self.unbind_bind()
         return ms, ns
     
-    def run_energy_minimization(self,N_steps,MC_step,burnin,T=1,mode='Metropolis',viz=False,vid=False):
+    def run_energy_minimization(self,N_steps,MC_step,burnin,T=1,T_min=0,mode='Metropolis',viz=False,vid=False):
         '''
         Implementation of the stochastic Monte Carlo simulation.
 
@@ -224,7 +224,7 @@ class LoopSage:
                     N_slide+=1
 
                 # Compute energy difference
-                self.Ti = T*(1-(i+1)/N_steps) if mode=='Annealing' else T
+                self.Ti = T-(T-T_min)*(i+1)/N_steps if mode=='Annealing' else T
                 dE = self.get_dE(ms,ns,m_new,n_new,j)
 
                 if dE <= 0 or np.exp(-dE/self.Ti) > np.random.rand():
