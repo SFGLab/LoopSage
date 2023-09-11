@@ -79,7 +79,7 @@ class MD_LE:
                 for nn in range(self.N_coh):
                     le_force = self.LE_forces[nn]
                     le_force.setBondParameters(i-1, self.M[nn,i-1], self.N[nn,i-1], 0.1, 0.0)
-                    le_force.setBondParameters(i, self.M[nn,i], self.N[nn,i], 0.1, 30000.0)
+                    le_force.setBondParameters(i, self.M[nn,i], self.N[nn,i], 0.1, 50000.0)
                     le_force.updateParametersInContext(simulation.context)
                 
                 simulation.step(sim_step)
@@ -152,7 +152,7 @@ class MD_LE:
             LE_force = mm.HarmonicBondForce()
             for i in range(self.N_steps):
                 if i==0:
-                    LE_force.addBond(self.M[nn,i], self.N[nn,i], 0.1, 30000.0)
+                    LE_force.addBond(self.M[nn,i], self.N[nn,i], 0.1, 50000.0)
                 else:
                     LE_force.addBond(self.M[nn,i], self.N[nn,i], 0.1, 0)
             self.system.addForce(LE_force)
