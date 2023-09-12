@@ -187,7 +187,7 @@ class LoopSage:
             ms[i], ns[i] = self.unbind_bind()
         return ms, ns
     
-    def run_energy_minimization(self,N_steps,MC_step,burnin,T=1,T_min=0,mode='Metropolis',viz=False,vid=False):
+    def run_energy_minimization(self,N_steps,MC_step,burnin,T=1,T_min=0,mode='Metropolis',viz=False,vid=False,save=False):
         '''
         Implementation of the stochastic Monte Carlo simulation.
 
@@ -201,6 +201,7 @@ class LoopSage:
         vid (bool): it creates a funky video with loops how they extrude in 1D.
         '''
         self.Ti=T
+        bi = burnin//MC_step
         ms, ns = self.initialize()
         E = self.get_E(ms,ns)
         Es,Ks,Fs,Bs,ufs, slides, unbinds = list(),list(),list(),list(),list(), list(), list()
@@ -248,10 +249,24 @@ class LoopSage:
 
                 N_slide, N_bind = 0, 0
         if viz: print('Done! ;D')
+
+        # Save simulation info
+        if save:
+            f = open(self.path+'/other/info.txt', "w")
+            f.write(f'Number of beads {self.N_beads}.\n')
+            f.write(f'Number of cohesins {self.N_coh}.\n')
+            f.write(f'Initial temperature {T}. Minimum temperature {T_min}.\n')
+            f.write(f'Monte Carlo optimization method: {mode}.\n')
+            f.write(f'Monte Carlo steps {N_steps}. Sampling frequency {MC_step}. Burnin period {burnin}.\n')
+            f.write(f'Crossing energy in equilibrium is {np.average(Ks[bi:]):.2f}. Crossing coefficient kappa={self.kappa}.\n')
+            f.write(f'Folding energy in equilibrium is {np.average(Fs[bi:]):.2f}. Folding coefficient f={self.f}.\n')
+            f.write(f'Binding energy in equilibrium is {np.average(Bs[bi:]):.2f}. Binding coefficient b={self.b}.\n')
+            f.write(f'Energy at equillibrium: {np.average(Es[bi:]):.2f}.\n')
+            f.close()
         
         # Some vizualizations
         if self.path!=None: save_info(self.N_beads,self.N_coh,self.N_CTCF,self.kappa,self.f,self.b,self.avg_loop,self.path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs)
-        if viz: make_timeplots(Es, Bs, Ks, Fs, burnin, self.path)
+        if viz: make_timeplots(Es, Bs, Ks, Fs, bi, self.path)
         if viz: make_moveplots(unbinds, slides, self.path)
         if viz: coh_traj_plot(Ms,Ns,self.N_beads, self.path)
         if viz: stochastic_heatmap(Ms,Ns,MC_step,self.N_beads,self.path)
@@ -262,17 +277,17 @@ class LoopSage:
 
 def main():
     N_beads,N_coh,kappa,f,b,r = 1000,50,20000,-1000,-1000,-1000
-    N_steps, MC_step, burnin, T = int(1e4), int(1e2), 10, 10
+    N_steps, MC_step, burnin, T = int(1e4), int(1e2), 1000, 1000
     region, chrom = [178421513, 179491193], 'chr1'
     # rnap_file = "/mnt/raid/data/encode/ChIP-Seq/ENCSR000EAD_POLR2A/ENCFF262GJK_pval_rep2.bigWig"
     # bedpe_file = "/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe"
-    bedpe_file = '/mnt/raid/data/Karolina_HiChIP/interactions_maps/hg00731_smc1_pulled_2.bedpe'
+    bedpe_file = '/mnt/raid/data/Karolina_HiChIP/interactions_maps/gm12878_ctcf_hichip_mumbach_pulled_cleaned_2.bedpe'
     L, R, dists = binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,False,True)
     # rna_track = load_track(file=rnap_file,region=region,chrom=chrom,N_beads=N_beads,viz=True)
-    track = load_track('/mnt/raid/data/Karolina_HiChIP/coverage/hg00731_smc1_pulled.bw',region,chrom,N_beads,True)
+    track = load_track('/mnt/raid/data/Karolina_HiChIP/coverage/gm12878_cohesin_hichip_mumbach_pulled.bw',region,chrom,N_beads,True)
     # M = binding_matrix_from_bedpe("/mnt/raid/data/Trios/bedpe/interactions_maps/hg00731_CTCF_pooled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
     print('Number of CTCF:',np.max([np.count_nonzero(L),np.count_nonzero(R)]))
-    path = make_folder(N_beads,N_coh,region,chrom,label='HiCHIP_hg00731_Smc')
+    path = make_folder(N_beads,N_coh,region,chrom,label='HiCHIP_GM12878_CTCF')
     sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,r,None,path,track)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Annealing',viz=True,vid=False)
     np.save(path+'/other/Ms.npy',Ms)

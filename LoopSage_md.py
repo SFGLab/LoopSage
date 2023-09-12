@@ -26,7 +26,7 @@ class MD_LE:
         '''
         self.M, self.N = M, N
         self.N_coh, self.N_steps = M.shape
-        self.N_beads, self.step, self.burnin = N_beads, MC_step, burnin
+        self.N_beads, self.step, self.burnin = N_beads, MC_step, burnin//MC_step
         self.path = path
     
     def run_pipeline(self,run_MD=True,sim_step=10,write_files=False,plots=False):

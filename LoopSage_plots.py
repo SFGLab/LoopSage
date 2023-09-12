@@ -104,6 +104,7 @@ def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
     plt.plot(Fs, 'red')
     plt.axvline(x=burnin, color='blue')
     plt.ylabel('Metrics', fontsize=16)
+    plt.ylim((np.min(Es)-10,-np.min(Es)))
     plt.xlabel('Monte Carlo Step', fontsize=16)
     # plt.yscale('symlog')
     plt.legend(['Total Energy', 'Binding', 'Knotting', 'Folding'], fontsize=16)
