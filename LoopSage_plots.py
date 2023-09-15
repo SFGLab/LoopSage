@@ -15,6 +15,7 @@ from statsmodels.graphics.tsaplots import plot_acf
 import scipy.stats
 from LoopSage import *
 from tqdm import tqdm
+from scipy import stats
 
 
 def draw_contact(c, y, start, end, lw=0.005, h=0.4):
@@ -83,6 +84,44 @@ def make_loop_hist(Ms,Ns,path=None):
         plt.savefig(save_path,format='svg',dpi=600)
         save_path = path+'/plots/loop_length.pdf'
         plt.savefig(save_path,format='pdf',dpi=600)
+    plt.show()
+
+    Is, Js = Ms.flatten(), Ns.flatten()
+    IJ_df = pd.DataFrame()
+    IJ_df['mi'] = Is
+    IJ_df['nj'] = Js
+    figure(figsize=(8, 8), dpi=600)
+    sns.jointplot(IJ_df, x="mi", y="nj",kind='hex',color='Red')
+    if path!=None:
+        save_path = path+'/plots/ij_prob.png'
+        plt.savefig(save_path,format='png',dpi=200)
+        save_path = path+'/plots/ij_prob.svg'
+        plt.savefig(save_path,format='svg',dpi=600)
+        save_path = path+'/plots/ij_prob.pdf'
+        plt.savefig(save_path,format='pdf',dpi=600)
+    plt.show()
+
+    m_idx, m_counts = np.unique(Ms, return_counts=True)
+    n_idx, n_counts = np.unique(Ns, return_counts=True)
+    Nm, Nn = np.sum(m_counts), np.sum(n_counts)
+    N_beads = np.max([np.max(m_idx),np.max(n_idx)])+1
+    m_probs, n_probs = np.zeros(N_beads), np.zeros(N_beads)
+    m_probs[m_idx], n_probs[n_idx] = m_counts/Nm, n_counts/Nn
+    prob_mat = np.outer(m_probs,n_probs)
+    m_non, n_non = np.nonzero(prob_mat)
+    nm_diff, nm_count_probs = np.zeros(len(m_non)), np.zeros(len(m_non))
+    for i in range(len(m_non)):
+        nm_count_probs[i] = prob_mat[m_non[i], n_non[i]]
+        nm_diff[i] = np.abs(m_non[i] - n_non[i])
+    count_df = pd.DataFrame()
+    count_df['Length'] = nm_diff
+    count_df['Count'] = nm_count_probs*Nm
+    sns.displot(data=count_df,x='Length',y='Count',color="blue",cbar=True)
+    plt.xscale('log')
+    plt.yscale('log')
+    if path!=None:
+        save_path = path+'/plots/count_length.png'
+        plt.savefig(save_path,format='png',dpi=200)
     plt.show()
 
 def make_gif(N,path=None):

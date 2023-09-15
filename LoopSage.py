@@ -263,6 +263,12 @@ class LoopSage:
             f.write(f'Binding energy in equilibrium is {np.average(Bs[bi:]):.2f}. Binding coefficient b={self.b}.\n')
             f.write(f'Energy at equillibrium: {np.average(Es[bi:]):.2f}.\n')
             f.close()
+
+            np.save(self.path+'/other/Ms.npy',Ms)
+            np.save(self.path+'/other/Ns.npy',Ns)
+            np.save(self.path+'/other/Es.npy',Es)
+            np.save(self.path+'/other/Fs.npy',Fs)
+            np.save(self.path+'/other/Ks.npy',Ks)
         
         # Some vizualizations
         if self.path!=None: save_info(self.N_beads,self.N_coh,self.N_CTCF,self.kappa,self.f,self.b,self.avg_loop,self.path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs)
@@ -276,9 +282,10 @@ class LoopSage:
         return Es, Ms, Ns, Bs, Ks, Fs, ufs
 
 def main():
-    N_beads,N_coh,kappa,f,b,r = 1000,50,20000,-1000,-1000,-1000
-    N_steps, MC_step, burnin, T = int(1e4), int(1e2), 1000, 1000
-    region, chrom = [178421513, 179491193], 'chr1'
+    N_beads,N_coh,kappa,f,b,r = 10000,250,20000,-1000,-5000,-1000
+    N_steps, MC_step, burnin, T, T_min = int(1e4), int(1e2), 1000, 5, 3
+    # region, chrom = [178421513, 179491193], 'chr1'
+    region, chrom = [0,248387328], 'chr1'
     # rnap_file = "/mnt/raid/data/encode/ChIP-Seq/ENCSR000EAD_POLR2A/ENCFF262GJK_pval_rep2.bigWig"
     # bedpe_file = "/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe"
     bedpe_file = '/mnt/raid/data/Karolina_HiChIP/interactions_maps/gm12878_ctcf_hichip_mumbach_pulled_cleaned_2.bedpe'
@@ -287,16 +294,12 @@ def main():
     track = load_track('/mnt/raid/data/Karolina_HiChIP/coverage/gm12878_cohesin_hichip_mumbach_pulled.bw',region,chrom,N_beads,True)
     # M = binding_matrix_from_bedpe("/mnt/raid/data/Trios/bedpe/interactions_maps/hg00731_CTCF_pooled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
     print('Number of CTCF:',np.max([np.count_nonzero(L),np.count_nonzero(R)]))
-    path = make_folder(N_beads,N_coh,region,chrom,label='HiCHIP_GM12878_CTCF')
+    path = make_folder(N_beads,N_coh,region,chrom,label='GM12878_CTCF_ChIA_PET_chromwide')
     sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,r,None,path,track)
-    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Annealing',viz=True,vid=False)
-    np.save(path+'/other/Ms.npy',Ms)
-    np.save(path+'/other/Ns.npy',Ns)
-    np.save(path+'/other/Fs.npy',Fs)
-    np.save(path+'/other/Bs.npy',Bs)
-    md = MD_LE(Ms,Ns,N_beads,burnin,MC_step,path)
-    sim_heat = md.run_pipeline(write_files=True,plots=True)
-    corr_exp_heat(sim_heat,bedpe_file,region,chrom,N_beads,path)
+    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,mode='Annealing',viz=True,vid=False,save=True)
+    # md = MD_LE(Ms,Ns,N_beads,burnin,MC_step,path)
+    # sim_heat = md.run_pipeline(write_files=True,plots=True)
+    # corr_exp_heat(sim_heat,bedpe_file,region,chrom,N_beads,path)
 
 if __name__=='__main__':
     main()
