@@ -9,10 +9,11 @@ from tqdm import tqdm
 from scipy.stats import norm
 from scipy.stats import poisson
 
-# my own libraries
+# My own libraries
 from LoopSage_preproc import *
 from LoopSage_plots import *
 from LoopSage_md import *
+from LoopSage_em import *
 
 def Kappa(mi,ni,mj,nj):
     k=0
@@ -22,12 +23,12 @@ def Kappa(mi,ni,mj,nj):
     return k
 
 class LoopSage:
-    def __init__(self,N_beads,N_coh,kappa,f,b,L,R,dists,r=None,RNAP=None,path=None,track=None):
+    def __init__(self,N_beads,N_lef,kappa,f,b,L,R,dists,r=None,RNAP=None,path=None,track=None):
         '''
         Definition of simulation parameters and input files.
         
         N_beads (int): number of monomers in the polymer chain.
-        N_coh (int): number of cohesins in the system.
+        N_lef (int): number of cohesins in the system.
         kappa (float): cohesing crossing coefficient of Hamiltonian.
         f (float): folding coeffient of Hamiltonian.
         b (float): binding coefficient of Hamiltonian.
@@ -39,7 +40,7 @@ class LoopSage:
         path (str): saving path
         track (np array): cohesin track file for preferential binding of cohesin.
         '''
-        self.N_beads, self.N_coh, self.N_CTCF = N_beads, N_coh, np.max([np.count_nonzero(L),np.count_nonzero(R)])
+        self.N_beads, self.N_lef, self.N_CTCF = N_beads, N_lef, np.max([np.count_nonzero(L),np.count_nonzero(R)])
         self.kappa, self.f, self.b = kappa, f, b
         self.L, self.R = L, R
         self.RNAP, self.r = RNAP, r
@@ -57,7 +58,7 @@ class LoopSage:
         Calculation of the CTCF binding energy. Needs cohesins positions as input.
         '''
         binding = 0
-        for i in range(self.N_coh):
+        for i in range(self.N_lef):
             binding += self.L[ms[i]]+self.R[ns[i]] #if self.b_mode=='vector' else self.M[ms[i],ns[i]]
         E_b = self.b*binding/(np.sum(self.L)+np.sum(self.R)) #if self.b_mode=='vector' else self.b*binding/np.sum(self.M)
         return E_b
@@ -67,7 +68,7 @@ class LoopSage:
         Calculation of the RNApII binding energy. Needs cohesins positions as input.
         '''
         rnap = 0
-        for i in range(self.N_coh):
+        for i in range(self.N_lef):
             rnap += self.RNAP[ms[i]]+self.RNAP[ns[i]] #if self.b_mode=='vector' else self.M[ms[i],ns[i]]
         E_rnap = self.r*rnap/np.sum(self.RNAP)
         return E_rnap
@@ -77,19 +78,19 @@ class LoopSage:
         Calculation of the cohesin crossing energy. Needs cohesins positions as input.
         '''
         crossing = 0
-        for i in range(self.N_coh):
-            for j in range(i+1,self.N_coh):
+        for i in range(self.N_lef):
+            for j in range(i+1,self.N_lef):
                 crossing+=Kappa(ms[i],ns[i],ms[j],ns[j])
-        return self.kappa*crossing/self.N_coh
+        return self.kappa*crossing/self.N_lef
     
     def E_fold(self,ms,ns):
         '''
         Calculation of the folding energy (or entropic cost) for the formation of loops. Needs cohesins positions as input.
         '''
         folding=0
-        for i in range(self.N_coh):
+        for i in range(self.N_lef):
             folding+=np.log(ns[i]-ms[i])
-        return self.f*folding/(self.N_coh*self.log_avg_loop)
+        return self.f*folding/(self.N_lef*self.log_avg_loop)
     
     def get_E(self,ms,ns):
         '''
@@ -102,6 +103,23 @@ class LoopSage:
             energy=self.E_bind(ms,ns)+self.E_cross(ms,ns)+self.E_fold(ms,ns)+self.E_rnap(ms,ns)
         return energy
 
+    def get_dE_bind(self,ms,ns,m_new,n_new,idx):
+        return self.b*(self.L[m_new]+self.R[n_new]-self.L[ms[idx]]-self.R[ns[idx]])/(np.sum(self.L)+np.sum(self.R))
+
+    def get_dE_fold(self,ms,ns,m_new,n_new,idx):
+        return self.f*(np.log(n_new-m_new)-np.log(ns[idx]-ms[idx]))/(self.N_lef*np.log(self.avg_loop))
+
+    def get_dE_rnap(self,ms,ns,m_new,n_new,idx):
+        return self.r*(self.RNAP[m_new]+self.RNAP[n_new]-self.RNAP[ms[idx]]-self.RNAP[ns[idx]])/(np.sum(self.RNAP))
+    
+    def get_dE_cross(self,ms,ns,m_new,n_new,idx):
+        K1, K2 = 0, 0
+        for i in range(self.N_lef):
+            if i!=idx: K1+=Kappa(ms[idx],ns[idx],ms[i],ns[i])
+        for i in range(self.N_lef):
+            if i!=idx: K2+=Kappa(m_new,n_new,ms[i],ns[i])
+        return self.kappa*(K2-K1)/self.N_lef
+
     def get_dE(self,ms,ns,m_new,n_new,idx):
         '''
         Calculation of the energy difference.
@@ -110,22 +128,11 @@ class LoopSage:
         m_new, n_new (ints): the two new cohesin positions of the cohesin of interest.
         idx (int): the index that represent the cohesin of interest.
         '''
-        dE_bind = self.b*(self.L[m_new]+self.R[n_new]-self.L[ms[idx]]-self.R[ns[idx]])/(np.sum(self.L)+np.sum(self.R)) #if self.b_mode=='vector' else self.b*(self.M[m_new,n_new]-self.M[ms[idx],ns[idx]])/np.sum(self.M)
-        dE_fold = self.f*(np.log(n_new-m_new)-np.log(ns[idx]-ms[idx]))/(self.N_coh*np.log(self.avg_loop))
-        if np.all(self.RNAP!=None): dE_rnap = self.r*(self.RNAP[m_new]+self.RNAP[n_new]-self.RNAP[ms[idx]]-self.RNAP[ns[idx]])/(np.sum(self.RNAP))
-        # dE_dfold = self.Ti*self.f*(self.loop_pdist[n_new-m_new]-self.loop_pdist[ns[idx]-ms[idx]])/(self.N_coh*self.loop_pdist[self.avg_loop])
-
-        K1, K2 = 0, 0
-        for i in range(self.N_coh):
-            if i!=idx: K1+=Kappa(ms[idx],ns[idx],ms[i],ns[i])
-        for i in range(self.N_coh):
-            if i!=idx: K2+=Kappa(m_new,n_new,ms[i],ns[i])
-        dE_cross = self.kappa*(K2-K1)/self.N_coh
-
-        if np.all(self.RNAP!=None):
-            dE = dE_bind+dE_fold+dE_cross+dE_rnap
-        else:
-            dE = dE_bind+dE_fold+dE_cross
+        dE_bind = self.get_dE_bind(ms,ns,m_new,n_new,idx)
+        dE_fold = self.get_dE_fold(ms,ns,m_new,n_new,idx)
+        if np.all(self.RNAP!=None): dE_rnap = self.get_dE_rnap(ms,ns,m_new,n_new,idx)
+        dE_cross = self.get_dE_cross(ms,ns,m_new,n_new,idx)
+        dE = dE_bind+dE_fold+dE_cross+dE_rnap if np.all(self.RNAP!=None) else dE_bind+dE_fold+dE_cross
         return dE
 
     def unfolding_metric(self,ms,ns):
@@ -134,18 +141,21 @@ class LoopSage:
         Cohesin positions are needed as input.
         '''
         fiber = np.zeros(self.N_beads)
-        for i in range(self.N_coh):
+        for i in range(self.N_lef):
             fiber[ms[i]:ns[i]]=1
         unfold = 2*(self.N_beads-np.count_nonzero(fiber))/self.N_beads
         return unfold
     
-    def unbind_bind(self):
+    def unbind_bind(self,poisson_choice=False):
         '''
         Implements one of the Monte Carlo moves.
         A cohesin unbinds from a specific position and loads randomly in different part of polymer.
         In case that there is cohesin track, there is preferential loading of cohesin.
         The left cohesin position is chosen randomly one from the available empty monomers.
         The right cohesin position is chosen from poisson distribution with average <average loop>/8.
+        _____________________________________________________________________________________________
+        poisson choice (bool): True if it is needed to choose initial cohesin positions from poisson 
+                               distribution.
         '''
         # bind left part of cohesin to a random available place
         if np.all(self.track==None):
@@ -154,7 +164,7 @@ class LoopSage:
             m_new = rd.choices(np.arange(self.N_beads-2), weights=self.track[:-2], k=1)[0]
         
         # bind right part of cohesin somewhere close to the left part
-        n_new = m_new+1+poisson.rvs(self.avg_loop//8)
+        n_new = m_new+1 if not poisson_choice else m_new+1+poisson.rvs(self.avg_loop//8)
         if n_new>=self.N_beads: n_new = rd.randint(m_new+1,self.N_beads-1)
         return int(m_new), int(n_new)
 
@@ -177,13 +187,13 @@ class LoopSage:
         else:
             m_new, n_new = m_old,n_old
         return m_new, n_new
-    
+
     def initialize(self):
         '''
         Random initialization of polymer DNA fiber with some cohesin positions.
         '''
-        ms, ns = np.zeros(self.N_coh).astype(int), np.zeros(self.N_coh).astype(int)
-        for i in range(self.N_coh):
+        ms, ns = np.zeros(self.N_lef).astype(int), np.zeros(self.N_lef).astype(int)
+        for i in range(self.N_lef):
             ms[i], ns[i] = self.unbind_bind()
         return ms, ns
     
@@ -205,13 +215,13 @@ class LoopSage:
         ms, ns = self.initialize()
         E = self.get_E(ms,ns)
         Es,Ks,Fs,Bs,ufs, slides, unbinds = list(),list(),list(),list(),list(), list(), list()
-        Ms, Ns = np.zeros((self.N_coh,N_steps)).astype(int), np.zeros((self.N_coh,N_steps)).astype(int)
+        Ms, Ns = np.zeros((self.N_lef,N_steps)).astype(int), np.zeros((self.N_lef,N_steps)).astype(int)
         N_slide, N_bind = 0, 0
         if viz: print('Average logarithmic loop size',self.log_avg_loop)
 
         if viz: print('Running simulation...')
         for i in tqdm(range(N_steps),disable=(not viz)):
-            for j in range(self.N_coh):
+            for j in range(self.N_lef):
                 # Randomly choose a move (sliding or rebinding)
                 r = rd.choice([0,1,2])
                 if r==0:
@@ -254,7 +264,7 @@ class LoopSage:
         if save:
             f = open(self.path+'/other/info.txt', "w")
             f.write(f'Number of beads {self.N_beads}.\n')
-            f.write(f'Number of cohesins {self.N_coh}.\n')
+            f.write(f'Number of cohesins {self.N_lef}.\n')
             f.write(f'Initial temperature {T}. Minimum temperature {T_min}.\n')
             f.write(f'Monte Carlo optimization method: {mode}.\n')
             f.write(f'Monte Carlo steps {N_steps}. Sampling frequency {MC_step}. Burnin period {burnin}.\n')
@@ -271,7 +281,7 @@ class LoopSage:
             np.save(self.path+'/other/Ks.npy',Ks)
         
         # Some vizualizations
-        if self.path!=None: save_info(self.N_beads,self.N_coh,self.N_CTCF,self.kappa,self.f,self.b,self.avg_loop,self.path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs)
+        if self.path!=None: save_info(self.N_beads,self.N_lef,self.N_CTCF,self.kappa,self.f,self.b,self.avg_loop,self.path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs)
         if viz: make_timeplots(Es, Bs, Ks, Fs, bi, self.path)
         if viz: make_moveplots(unbinds, slides, self.path)
         if viz: coh_traj_plot(Ms,Ns,self.N_beads, self.path)
@@ -282,10 +292,10 @@ class LoopSage:
         return Es, Ms, Ns, Bs, Ks, Fs, ufs
 
 def main():
-    N_beads,N_coh,kappa,f,b,r = 10000,250,20000,-1000,-5000,-1000
-    N_steps, MC_step, burnin, T, T_min = int(1e4), int(1e2), 1000, 5, 3
-    # region, chrom = [178421513, 179491193], 'chr1'
-    region, chrom = [0,248387328], 'chr1'
+    N_beads,N_lef,kappa,f,b,r = 1000,50,100000,-1000,-1000,-1000
+    N_steps, MC_step, burnin, T, T_min = int(1e4), int(1e2), 1000, 5, 0
+    region, chrom = [178421513, 179491193], 'chr1'
+    # region, chrom = [0,248387328], 'chr1'
     # rnap_file = "/mnt/raid/data/encode/ChIP-Seq/ENCSR000EAD_POLR2A/ENCFF262GJK_pval_rep2.bigWig"
     # bedpe_file = "/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe"
     bedpe_file = '/mnt/raid/data/Karolina_HiChIP/interactions_maps/gm12878_ctcf_hichip_mumbach_pulled_cleaned_2.bedpe'
@@ -294,12 +304,15 @@ def main():
     track = load_track('/mnt/raid/data/Karolina_HiChIP/coverage/gm12878_cohesin_hichip_mumbach_pulled.bw',region,chrom,N_beads,True)
     # M = binding_matrix_from_bedpe("/mnt/raid/data/Trios/bedpe/interactions_maps/hg00731_CTCF_pooled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
     print('Number of CTCF:',np.max([np.count_nonzero(L),np.count_nonzero(R)]))
-    path = make_folder(N_beads,N_coh,region,chrom,label='GM12878_CTCF_ChIA_PET_chromwide')
-    sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,r,None,path,track)
+    path = make_folder(N_beads,N_lef,region,chrom,label='GM12878_CTCF_HiChIP')
+    sim = LoopSage(N_beads,N_lef,kappa,f,b,L,R,dists,r,None,path,track)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,mode='Annealing',viz=True,vid=False,save=True)
     # md = MD_LE(Ms,Ns,N_beads,burnin,MC_step,path)
     # sim_heat = md.run_pipeline(write_files=True,plots=True)
     # corr_exp_heat(sim_heat,bedpe_file,region,chrom,N_beads,path)
+    em = EM_LE(Ms,Ns,N_beads,burnin,MC_step,path)
+    sim_heat = em.run_pipeline(write_files=True,plots=True)
+    corr_exp_heat(sim_heat,bedpe_file,region,chrom,N_beads,path)
 
 if __name__=='__main__':
     main()
