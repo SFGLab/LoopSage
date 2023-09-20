@@ -29,7 +29,7 @@ class EM_LE:
         self.N_beads, self.step, self.burnin = N_beads, MC_step, burnin//MC_step
         self.path = path
     
-    def run_pipeline(self,sim_step=10,write_files=False,plots=False):
+    def run_pipeline(self,crash_step=10,write_files=False,plots=False):
         '''
         This is the basic function that runs the molecular simulation pipeline.
 
@@ -62,12 +62,12 @@ class EM_LE:
             # Minimize energy
             simulation = Simulation(pdb.topology, self.system, integrator)
             simulation.context.setPositions(pdb.positions)
-            current_platform = simulation.context.getPlatform()
             simulation.minimizeEnergy(tolerance=0.001)
             self.state = simulation.context.getState(getPositions=True)
             PDBxFile.writeFile(pdb.topology, self.state.getPositions(), open(self.path+f'/pdbs/EMLE_{(i-self.burnin)//self.step}.cif', 'w'))
             save_path = self.path+f'/heatmaps/heat_{(i-self.burnin)//self.step}.svg' if write_files else None
             heats.append(get_heatmap(self.state.getPositions(),save_path=save_path,save=write_files))
+            if (i-self.burnin)//self.step%crash_step==0: time.sleep(2) # so as to not overload the system
         print('Energy minimizations done :D\n')
 
         self.avg_heat = np.average(heats,axis=0)
