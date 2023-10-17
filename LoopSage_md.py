@@ -29,7 +29,7 @@ class MD_LE:
         self.N_beads, self.step, self.burnin = N_beads, MC_step, burnin//MC_step
         self.path = path
     
-    def run_pipeline(self,run_MD=True,sim_step=10,write_files=False,plots=False):
+    def run_pipeline(self,run_MD=True,sim_step=5,write_files=False,plots=False):
         '''
         This is the basic function that runs the molecular simulation pipeline.
 
@@ -103,7 +103,7 @@ class MD_LE:
                 plt.savefig(self.path+f'/plots/avg_heatmap.svg',format='svg',dpi=500)
                 plt.savefig(self.path+f'/plots/avg_heatmap.pdf',format='pdf',dpi=500)
                 # plt.colorbar()
-                plt.show()
+                plt.close()
 
                 figure(figsize=(10, 10))
                 plt.imshow(self.std_heat,cmap="Reds",vmax=1)
@@ -111,7 +111,7 @@ class MD_LE:
                 plt.savefig(self.path+f'/plots/std_heatmap.svg',format='svg',dpi=500)
                 plt.savefig(self.path+f'/plots/std_heatmap.pdf',format='pdf',dpi=500)
                 # plt.colorbar()
-                plt.show()
+                plt.close()
                 
                 # heats_to_prob(self.heats,self.path+f'/plots/prob_dist_heatmap.svg',burnin=self.burnin,q=0.1)
             return self.avg_heat

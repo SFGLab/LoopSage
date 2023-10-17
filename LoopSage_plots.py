@@ -84,7 +84,7 @@ def make_loop_hist(Ms,Ns,path=None):
         plt.savefig(save_path,format='svg',dpi=600)
         save_path = path+'/plots/loop_length.pdf'
         plt.savefig(save_path,format='pdf',dpi=600)
-    plt.show()
+    plt.close()
 
     Is, Js = Ms.flatten(), Ns.flatten()
     IJ_df = pd.DataFrame()
@@ -99,7 +99,7 @@ def make_loop_hist(Ms,Ns,path=None):
         plt.savefig(save_path,format='svg',dpi=600)
         save_path = path+'/plots/ij_prob.pdf'
         plt.savefig(save_path,format='pdf',dpi=600)
-    plt.show()
+    plt.close()
 
     m_idx, m_counts = np.unique(Ms, return_counts=True)
     n_idx, n_counts = np.unique(Ns, return_counts=True)
@@ -122,7 +122,7 @@ def make_loop_hist(Ms,Ns,path=None):
     if path!=None:
         save_path = path+'/plots/count_length.png'
         plt.savefig(save_path,format='png',dpi=200)
-    plt.show()
+    plt.close()
 
 def make_gif(N,path=None):
     with imageio.get_writer('plots/arc_video.gif', mode='I') as writer:
@@ -156,7 +156,7 @@ def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
         plt.savefig(save_path,format='svg',dpi=200)
         save_path = path+'/plots/energies.pdf'
         plt.savefig(save_path,format='pdf',dpi=600)
-    plt.show()
+    plt.close()
 
     # Autocorrelation plot
     plot_acf(Fs, title=None, lags=len(Fs)//2)
@@ -170,7 +170,7 @@ def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
         plt.savefig(save_path,format='svg',dpi=200)
         save_path = path+'/plots/autoc.pdf'
         plt.savefig(save_path,format='pdf',dpi=200)
-    plt.show()
+    plt.close()
 
 def make_moveplots(unbinds, slides, path=None):
     try:
@@ -189,7 +189,7 @@ def make_moveplots(unbinds, slides, path=None):
         plt.savefig(save_path,dpi=600)
         save_path = path+'/plots/moveplot.pdf'
         plt.savefig(save_path,dpi=600)
-    plt.show()
+    plt.close()
 
 def temperature_biff_diagram(T_range, f=-500, b=-200,N_beads=500,N_coh=50, kappa=10000, file='CTCF_hg38_PeakSupport_2.bedpe'):
     Bins, Knots, Folds, UFs = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
@@ -211,7 +211,7 @@ def temperature_biff_diagram(T_range, f=-500, b=-200,N_beads=500,N_coh=50, kappa
     plt.grid()
     plt.savefig('temp_bif_plot.png',dpi=600)
     plt.savefig('temp_bif_plot.pdf',dpi=600)
-    plt.show()
+    plt.close()
 
     return Knots, Bins, Folds
 
@@ -241,7 +241,7 @@ def temperature_T_Ncoh_diagram(T_range, Ncoh_range=np.array([10,25,50,100]), f=-
     plt.savefig(f'Ncoh_temp_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}.pdf',format='pdf',dpi=600)
     plt.savefig(f'Ncoh_temp_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}.png',format='png',dpi=600)
     plt.savefig(f'Ncoh_temp_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}.svg',format='svg',dpi=600)
-    plt.show()
+    plt.close()
     
     return Knots, Bins, Folds, UFs
 
@@ -262,7 +262,7 @@ def temperature_loop_distplot(T_range, N_coh=50, f=-1000, b=-1000, kappa=100000,
     plt.savefig('temp_loop_length.png',format='png',dpi=600)
     plt.savefig('temp_loop_length.svg',format='svg',dpi=600)
     plt.savefig('temp_loop_length.pdf',format='pdf',dpi=600)
-    plt.show()
+    plt.close()
 
 def fb_loop_distplot(fbs, N_coh=50, T=5, kappa=100000, N_beads=1000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
     colors = ['red','green','magenta','blue']
@@ -281,7 +281,7 @@ def fb_loop_distplot(fbs, N_coh=50, T=5, kappa=100000, N_beads=1000, file='/mnt/
     plt.savefig('fb_loop_length.png',format='png',dpi=600)
     plt.savefig('fb_loop_length.svg',format='svg',dpi=600)
     plt.savefig('fb_loop_length.pdf',format='pdf',dpi=600)
-    plt.show()
+    plt.close()
 
 def knot_T_diagram(T_range, kappas, N_coh=10, f=-1000, b=-1000, N_beads=1000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
     colors = ['red','green','magenta','blue']
@@ -309,7 +309,7 @@ def knot_T_diagram(T_range, kappas, N_coh=10, f=-1000, b=-1000, N_beads=1000, fi
     plt.savefig(f'kappa_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}_Ncoh_{N_coh}.pdf',format='pdf',dpi=600)
     plt.savefig(f'kappa_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}_Ncoh_{N_coh}.png',format='png',dpi=600)
     plt.savefig(f'kappa_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}_Ncoh_{N_coh}.svg',format='svg',dpi=600)
-    plt.show()
+    plt.close()
 
 def Nbeads_diagram(Nbs, N_coh=50, T=5, f=-1000, b=-1000, kappa=100000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
     Folds, UFs = np.zeros(len(Nbs)), np.zeros(len(Nbs))
@@ -331,7 +331,7 @@ def Nbeads_diagram(Nbs, N_coh=50, T=5, f=-1000, b=-1000, kappa=100000, file='/mn
     plt.savefig('Nbeads_plot.pdf',format='pdf',dpi=600)
     plt.savefig('Nbeads_plot.png',format='png',dpi=600)
     plt.savefig('Nbeads_plot.svg',format='svg',dpi=600)
-    plt.show()
+    plt.close()
 
 def fb_heatmap(fs,bs,T,N_beads=500,N_coh=20,kappa=200000,file='/mnt/raid/data/Trios/bedpe/hiccups_loops_sqrtVC_norm/hg00731_ctcf_vc_sqrt_merged_loops_edited_2.bedpe'):
     fold_mat  = np.zeros([len(fs),len(bs)])
@@ -350,7 +350,7 @@ def fb_heatmap(fs,bs,T,N_beads=500,N_coh=20,kappa=200000,file='/mnt/raid/data/Tr
     plt.ylabel('f',fontsize=16)
     plt.colorbar()
     plt.savefig(f'fold_heat_T{T}.pdf',format='pdf',dpi=600)
-    plt.show()
+    plt.close()
 
     figure(figsize=(12, 12), dpi=600)
     plt.contourf(fs, bs, ufold_mat,cmap='gnuplot',vmax=1.5)
@@ -358,7 +358,7 @@ def fb_heatmap(fs,bs,T,N_beads=500,N_coh=20,kappa=200000,file='/mnt/raid/data/Tr
     plt.ylabel('f',fontsize=16)
     plt.colorbar()
     plt.savefig(f'ufold_heat_T{T}.pdf',format='pdf',dpi=600)
-    plt.show()
+    plt.close()
 
 def average_pooling(mat,dim_new):
     im = Image.fromarray(mat)
@@ -401,7 +401,7 @@ def correlation_plot(given_heatmap,T_range,path):
     plt.grid()
     save_path = path+'/plots/pearson_plot.pdf' if path!=None else 'pearson_plot.pdf'
     plt.savefig(save_path,dpi=600)
-    plt.show()
+    plt.close()
 
 def coh_traj_plot(ms,ns,N_beads,path):
     N_coh = len(ms)
@@ -422,7 +422,7 @@ def coh_traj_plot(ms,ns,N_beads,path):
     plt.savefig(save_path, format='svg', dpi=600)
     save_path = path+'/plots/coh_trajectories.pdf' if path!=None else 'coh_trajectories.pdf'
     plt.savefig(save_path, format='pdf', dpi=600)
-    plt.show()
+    plt.close()
 
 def stochastic_heatmap(ms,ns,step,L,path,comm_prop=True,fill_square=True):
     N_coh, N_steps = ms.shape
@@ -459,4 +459,4 @@ def stochastic_heatmap(ms,ns,step,L,path,comm_prop=True,fill_square=True):
     save_path = path+f'/plots/stochastic_heatmap.pdf' if path!=None else 'stochastic_heatmap.pdf'
     plt.savefig(save_path,format='pdf',dpi=500)
     # plt.colorbar()
-    plt.show()
+    plt.close()

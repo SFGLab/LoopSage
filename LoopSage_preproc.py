@@ -50,7 +50,7 @@ def binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,normal
         plt.ylabel('Count')
         plt.xlabel('Loop Size')
         plt.grid()
-        plt.show()
+        plt.close()
 
         fig, axs = plt.subplots(2, figsize=(15, 10))
         axs[0].plot(L,'g-')
@@ -119,7 +119,7 @@ def binding_matrix_from_bedpe(bedpe_file,N_beads,region,chrom,normalization=Fals
     plt.ylabel('Count')
     plt.xlabel('Loop Size')
     plt.grid()
-    plt.show()
+    plt.close()
 
     print('Average loop size:',np.average(distances))
     print('Median loop size:',np.median(distances))
@@ -142,7 +142,7 @@ def distance_point_line(x0,y0,a=1,b=-1,c=0):
 def load_track(file,region,chrom,N_beads,viz=False):
     bw = pyBigWig.open(file)
     weights = bw_to_array(bw, region, chrom, N_beads,viz)
-    return weights
+    return weights[:N_beads]
 
 def bw_to_array(bw, region, chrom, N_beads, viz=False):
     step = (region[1]-region[0])//N_beads
@@ -156,6 +156,6 @@ def bw_to_array(bw, region, chrom, N_beads, viz=False):
         plt.plot(weights)
         plt.grid()
         plt.title('ChIP-Seq signal',fontsize=20)
-        plt.show()
+        plt.close()
     
     return weights

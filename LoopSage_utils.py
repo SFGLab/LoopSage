@@ -83,7 +83,10 @@ def corr_exp_heat(mat_sim,bedpe_file,region,chrom,N_beads,path):
         if df[8][i]>=0: exp_vec[y]+=df[6][i]
         if df[7][i]>=0: th_vec[x]+=mat_sim[x,y]
         if df[8][i]>=0: th_vec[y]+=mat_sim[x,y]
+    mask1, mask2 = exp_vec==0, th_vec==0
+    exp_vec, th_vec = exp_vec[~mask1], th_vec[~mask2]
 
+    # pearson correlation calculation
     pears = pearsonr(th_vec,exp_vec)
     print('Pearson Correlation with experimental heatmap: ', pears[0])
 
@@ -307,7 +310,7 @@ def heats_to_prob(heats,path,burnin,q=0.15):
     plt.colorbar()
     plt.title(f'Normalized Probability distribution that distance < {q} quantile', fontsize=13)
     plt.savefig(path,format='png',dpi=500)
-    plt.show()
+    plt.show(block=False)
 
 def binned_distance_matrix(idx,folder_name,input=None,th=23):
     '''
@@ -351,7 +354,7 @@ def average_binned_distance_matrix(folder_name,N_steps,step,burnin,th1=0,th2=23)
     # plt.colorbar();
     # plt.title('Average Binned Distance heatmap',fontsize=16)
     plt.savefig(folder_name+f'/plots/SM_avg_bindist_heatmap.png',format='png',dpi=500)
-    plt.show()
+    plt.show(block=False)
     np.save(folder_name+'/plots/average_binned_dist_matrix.npy',avg_mat)
 
     return avg_mat

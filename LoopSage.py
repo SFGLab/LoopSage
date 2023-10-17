@@ -57,9 +57,7 @@ class LoopSage:
         '''
         Calculation of the CTCF binding energy. Needs cohesins positions as input.
         '''
-        binding = 0
-        for i in range(self.N_lef):
-            binding += self.L[ms[i]]+self.R[ns[i]] #if self.b_mode=='vector' else self.M[ms[i],ns[i]]
+        binding = np.sum(self.L[ms]+self.R[ns]) #if self.b_mode=='vector' else self.M[ms[i],ns[i]]
         E_b = self.b*binding/(np.sum(self.L)+np.sum(self.R)) #if self.b_mode=='vector' else self.b*binding/np.sum(self.M)
         return E_b
     
@@ -67,9 +65,7 @@ class LoopSage:
         '''
         Calculation of the RNApII binding energy. Needs cohesins positions as input.
         '''
-        rnap = 0
-        for i in range(self.N_lef):
-            rnap += self.RNAP[ms[i]]+self.RNAP[ns[i]] #if self.b_mode=='vector' else self.M[ms[i],ns[i]]
+        rnap = np.sum(self.RNAP[ms]+self.RNAP[ns]) #if self.b_mode=='vector' else self.M[ms[i],ns[i]]
         E_rnap = self.r*rnap/np.sum(self.RNAP)
         return E_rnap
 
@@ -87,9 +83,7 @@ class LoopSage:
         '''
         Calculation of the folding energy (or entropic cost) for the formation of loops. Needs cohesins positions as input.
         '''
-        folding=0
-        for i in range(self.N_lef):
-            folding+=np.log(ns[i]-ms[i])
+        folding=np.sum(np.log(ns-ms))
         return self.f*folding/(self.N_lef*self.log_avg_loop)
     
     def get_E(self,ms,ns):
@@ -210,7 +204,8 @@ class LoopSage:
         viz (bool): True in case that user wants to see plots.
         vid (bool): it creates a funky video with loops how they extrude in 1D.
         '''
-        self.Ti=T
+        self.Ti = T
+        Ts = list()
         bi = burnin//MC_step
         ms, ns = self.initialize()
         E = self.get_E(ms,ns)
@@ -221,6 +216,8 @@ class LoopSage:
 
         if viz: print('Running simulation...')
         for i in tqdm(range(N_steps),disable=(not viz)):
+            self.Ti = T-(T-T_min)*(i+1)/N_steps if mode=='Annealing' else T
+            Ts.append(self.Ti)
             for j in range(self.N_lef):
                 # Randomly choose a move (sliding or rebinding)
                 r = rd.choice([0,1,2])
@@ -235,7 +232,7 @@ class LoopSage:
                     N_slide+=1
 
                 # Compute energy difference
-                self.Ti = T-(T-T_min)*(i+1)/N_steps if mode=='Annealing' else T
+                
                 dE = self.get_dE(ms,ns,m_new,n_new,j)
 
                 if dE <= 0 or np.exp(-dE/self.Ti) > np.random.rand():
@@ -247,6 +244,7 @@ class LoopSage:
                 if i%MC_step==0:
                     if vid: draw_arcplot(Ms[:,i],Ns[:,i],self.N_beads,i//MC_step,self.path)
             
+            
             # Compute Metrics
             if i%MC_step==0:
                 ufs.append(self.unfolding_metric(ms,ns))
@@ -256,8 +254,8 @@ class LoopSage:
                 Bs.append(self.E_bind(ms,ns))
                 slides.append(N_slide)
                 unbinds.append(N_bind)
-
                 N_slide, N_bind = 0, 0
+                
         if viz: print('Done! ;D')
 
         # Save simulation info
@@ -276,6 +274,7 @@ class LoopSage:
 
             np.save(self.path+'/other/Ms.npy',Ms)
             np.save(self.path+'/other/Ns.npy',Ns)
+            np.save(self.path+'/other/Ts.npy',Ts)
             np.save(self.path+'/other/Es.npy',Es)
             np.save(self.path+'/other/Fs.npy',Fs)
             np.save(self.path+'/other/Ks.npy',Ks)
@@ -285,26 +284,27 @@ class LoopSage:
         if viz: make_timeplots(Es, Bs, Ks, Fs, bi, self.path)
         if viz: make_moveplots(unbinds, slides, self.path)
         if viz: coh_traj_plot(Ms,Ns,self.N_beads, self.path)
-        if viz: stochastic_heatmap(Ms,Ns,MC_step,self.N_beads,self.path)
-        if viz: make_loop_hist(Ms,Ns,self.path)
-        if vid: make_gif(N_steps//MC_step, self.path)
+        # if viz and self.N_beads<=2000: stochastic_heatmap(Ms,Ns,MC_step,self.N_beads,self.path)
+        # if viz: make_loop_hist(Ms,Ns,self.path)
+        # if vid: make_gif(N_steps//MC_step, self.path)
         
         return Es, Ms, Ns, Bs, Ks, Fs, ufs
 
 def main():
     N_beads,N_lef,kappa,f,b,r = 1000,50,100000,-1000,-1000,-1000
-    N_steps, MC_step, burnin, T, T_min = int(1e4), int(1e2), 1000, 5, 0
+    N_steps, MC_step, burnin, T, T_min = int(2e4), int(5e2), 1000, 5,0
     region, chrom = [178421513, 179491193], 'chr1'
     # region, chrom = [0,248387328], 'chr1'
+    # region, chrom = [178421513, 183769913], 'chr1'
     # rnap_file = "/mnt/raid/data/encode/ChIP-Seq/ENCSR000EAD_POLR2A/ENCFF262GJK_pval_rep2.bigWig"
     # bedpe_file = "/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe"
     bedpe_file = '/mnt/raid/data/Karolina_HiChIP/interactions_maps/gm12878_ctcf_hichip_mumbach_pulled_cleaned_2.bedpe'
-    L, R, dists = binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,False,True)
+    L, R, dists = binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,False,False)
     # rna_track = load_track(file=rnap_file,region=region,chrom=chrom,N_beads=N_beads,viz=True)
     track = load_track('/mnt/raid/data/Karolina_HiChIP/coverage/gm12878_cohesin_hichip_mumbach_pulled.bw',region,chrom,N_beads,True)
     # M = binding_matrix_from_bedpe("/mnt/raid/data/Trios/bedpe/interactions_maps/hg00731_CTCF_pooled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
     print('Number of CTCF:',np.max([np.count_nonzero(L),np.count_nonzero(R)]))
-    path = make_folder(N_beads,N_lef,region,chrom,label='GM12878_CTCF_HiChIP')
+    path = make_folder(N_beads,N_lef,region,chrom,label='for_network_analysis')
     sim = LoopSage(N_beads,N_lef,kappa,f,b,L,R,dists,r,None,path,track)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,mode='Annealing',viz=True,vid=False,save=True)
     # md = MD_LE(Ms,Ns,N_beads,burnin,MC_step,path)
