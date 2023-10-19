@@ -23,35 +23,39 @@ def Kappa(mi,ni,mj,nj):
     return k
 
 class LoopSage:
-    def __init__(self,N_beads,N_lef,kappa,f,b,L,R,dists,r=None,RNAP=None,path=None,track=None):
+    def __init__(self,region,chrom,bedpe_file,N_beads=None,N_lef=None,f=None,b=None,kappa=None,r=None,track_file=None,rnap_file=None,label=None):
         '''
         Definition of simulation parameters and input files.
         
+        region (list): [start,end]
+        chrom (str): indicator of chromosome
+        bedpe_file (str): path where is the bedpe file with CTCF loops.
+        track_file (str): bigwig file with cohesin coverage.
+        rnap_file (str): bigwig file with RNAP (or other protein of interest) coverage.
         N_beads (int): number of monomers in the polymer chain.
         N_lef (int): number of cohesins in the system.
         kappa (float): cohesing crossing coefficient of Hamiltonian.
         f (float): folding coeffient of Hamiltonian.
         b (float): binding coefficient of Hamiltonian.
-        L (np array): left-binding potential.
-        R (np array): right-binding potential.
-        dists (np array): distribution of loop distances from the diagonal.
         r (float): optional parameter for RNApII loops in case that we want to include this kind of loops in simulation.
-        RNAP (np array): optional RNAP potential.
-        path (str): saving path
-        track (np array): cohesin track file for preferential binding of cohesin.
         '''
-        self.N_beads, self.N_lef, self.N_CTCF = N_beads, N_lef, np.max([np.count_nonzero(L),np.count_nonzero(R)])
-        self.kappa, self.f, self.b = kappa, f, b
-        self.L, self.R = L, R
-        self.RNAP, self.r = RNAP, r
+        self.N_beads = round((region[1]-region[0])/(179491193-178421513)*1000) if N_beads==None else N_beads
+        print('Number of beads:',self.N_beads)
+        self.chrom, self.region = chrom, region
+        self.bedpe_file, self.rnap_file, self.track_file = bedpe_file, rnap_file, track_file
+        self.preprocessing()
+        self.kappa = 1e7 if kappa==None else kappa
+        self.f = -1000 if f==None else f
+        self.b = -self.N_beads if b==None else b
+        self.N_lef = self.N_beads//20
+        print('Number of LEFs:',self.N_lef)
+        self.r = -self.N_beads if (r==None and rnap_file==None) else None
         self.states = np.full(self.N_beads,False)
-        self.dists = np.array(dists)
-        self.track = track
         self.avg_loop, self.max_loop = int(np.average(self.dists))+1, int(np.max(self.dists))+1
         self.log_avg_loop = np.average(np.log(self.dists+1))
-        self.path=path
         self.params = stats.maxwell.fit(self.dists)
         self.loop_pdist = stats.maxwell.pdf(np.arange(self.N_beads), *self.params)
+        self.path = make_folder(self.N_beads,self.N_lef,self.region,self.chrom,label=label)
     
     def E_bind(self,ms,ns):
         '''
@@ -206,11 +210,12 @@ class LoopSage:
         '''
         self.Ti = T
         Ts = list()
+        self.burnin, self.MC_step = burnin, MC_step 
         bi = burnin//MC_step
         ms, ns = self.initialize()
         E = self.get_E(ms,ns)
         Es,Ks,Fs,Bs,ufs, slides, unbinds = list(),list(),list(),list(),list(), list(), list()
-        Ms, Ns = np.zeros((self.N_lef,N_steps)).astype(int), np.zeros((self.N_lef,N_steps)).astype(int)
+        self.Ms, self.Ns = np.zeros((self.N_lef,N_steps)).astype(int), np.zeros((self.N_lef,N_steps)).astype(int)
         N_slide, N_bind = 0, 0
         if viz: print('Average logarithmic loop size',self.log_avg_loop)
 
@@ -232,18 +237,15 @@ class LoopSage:
                     N_slide+=1
 
                 # Compute energy difference
-                
                 dE = self.get_dE(ms,ns,m_new,n_new,j)
-
                 if dE <= 0 or np.exp(-dE/self.Ti) > np.random.rand():
                     ms[j], ns[j] = m_new, n_new
                     E += dE
 
                 # Save trajectories
-                Ms[j,i], Ns[j,i] = ms[j], ns[j]
+                self.Ms[j,i], self.Ns[j,i] = ms[j], ns[j]
                 if i%MC_step==0:
                     if vid: draw_arcplot(Ms[:,i],Ns[:,i],self.N_beads,i//MC_step,self.path)
-            
             
             # Compute Metrics
             if i%MC_step==0:
@@ -262,7 +264,10 @@ class LoopSage:
         if save:
             f = open(self.path+'/other/info.txt', "w")
             f.write(f'Number of beads {self.N_beads}.\n')
-            f.write(f'Number of cohesins {self.N_lef}.\n')
+            f.write(f'Number of cohesins {self.N_lef}. Number of CTCFs {self.N_CTCF}.\n')
+            f.write(f'Bedpe file for CTCF binding is {self.bedpe_file}.\n')
+            f.write(f'LEF track file for LEF preferential relocation is {self.track_file}.\n')
+            f.write(f'RNAP track file for RNAP binding potential is {self.rnap_file}.\n')
             f.write(f'Initial temperature {T}. Minimum temperature {T_min}.\n')
             f.write(f'Monte Carlo optimization method: {mode}.\n')
             f.write(f'Monte Carlo steps {N_steps}. Sampling frequency {MC_step}. Burnin period {burnin}.\n')
@@ -272,8 +277,8 @@ class LoopSage:
             f.write(f'Energy at equillibrium: {np.average(Es[bi:]):.2f}.\n')
             f.close()
 
-            np.save(self.path+'/other/Ms.npy',Ms)
-            np.save(self.path+'/other/Ns.npy',Ns)
+            np.save(self.path+'/other/Ms.npy',self.Ms)
+            np.save(self.path+'/other/Ns.npy',self.Ns)
             np.save(self.path+'/other/Ts.npy',Ts)
             np.save(self.path+'/other/Es.npy',Es)
             np.save(self.path+'/other/Fs.npy',Fs)
@@ -283,36 +288,44 @@ class LoopSage:
         if self.path!=None: save_info(self.N_beads,self.N_lef,self.N_CTCF,self.kappa,self.f,self.b,self.avg_loop,self.path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs)
         if viz: make_timeplots(Es, Bs, Ks, Fs, bi, self.path)
         if viz: make_moveplots(unbinds, slides, self.path)
-        if viz: coh_traj_plot(Ms,Ns,self.N_beads, self.path)
-        # if viz and self.N_beads<=2000: stochastic_heatmap(Ms,Ns,MC_step,self.N_beads,self.path)
-        # if viz: make_loop_hist(Ms,Ns,self.path)
+        if viz: coh_traj_plot(self.Ms,self.Ns,self.N_beads, self.path)
+        # if viz and self.N_beads<=2000: stochastic_heatmap(self.Ms,self.Ns,MC_step,self.N_beads,self.path)
+        # if viz: make_loop_hist(self.Ms,self.Ns,self.path)
         # if vid: make_gif(N_steps//MC_step, self.path)
         
-        return Es, Ms, Ns, Bs, Ks, Fs, ufs
+        return Es, self.Ms, self.Ns, Bs, Ks, Fs, ufs
+
+    def preprocessing(self):
+        self.L, self.R, self.dists = binding_vectors_from_bedpe(self.bedpe_file,self.N_beads,self.region,self.chrom,False,False)
+        self.RNAP = load_track(file=self.rnap_file,region=self.region,chrom=self.chrom,N_beads=self.N_beads,viz=True) if np.all(self.rnap_file!=None) else None
+        self.track = load_track(self.track_file,self.region,self.chrom,self.N_beads,True) if np.all(self.track_file!=None) else None
+        self.N_CTCF = np.max([np.count_nonzero(self.L),np.count_nonzero(self.R)])
+        print('Number of CTCF:',self.N_CTCF)
+
+    def run_EM(self):
+        em = EM_LE(self.Ms,self.Ns,self.N_beads,self.burnin,self.MC_step,self.path)
+        sim_heat = em.run_pipeline(write_files=True,plots=True)
+        corr_exp_heat(sim_heat,self.bedpe_file,self.region,self.chrom,self.N_beads,self.path)
+
+    def run_MD(self):
+        md = MD_LE(self.Ms,self,Ns,self.N_beads,self.burnin,self.MC_step,self.path)
+        sim_heat = md.run_pipeline(write_files=True,plots=True)
+        corr_exp_heat(sim_heat,self.bedpe_file,self.region,self.chrom,self.N_beads,self.path)
 
 def main():
     N_beads,N_lef,kappa,f,b,r = 1000,50,100000,-1000,-1000,-1000
-    N_steps, MC_step, burnin, T, T_min = int(2e4), int(5e2), 1000, 5,0
+    N_steps, MC_step, burnin, T, T_min = int(1e4), int(5e2), 1000, 5,0
     region, chrom = [178421513, 179491193], 'chr1'
     # region, chrom = [0,248387328], 'chr1'
     # region, chrom = [178421513, 183769913], 'chr1'
     # rnap_file = "/mnt/raid/data/encode/ChIP-Seq/ENCSR000EAD_POLR2A/ENCFF262GJK_pval_rep2.bigWig"
     # bedpe_file = "/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe"
     bedpe_file = '/mnt/raid/data/Karolina_HiChIP/interactions_maps/gm12878_ctcf_hichip_mumbach_pulled_cleaned_2.bedpe'
-    L, R, dists = binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,False,False)
-    # rna_track = load_track(file=rnap_file,region=region,chrom=chrom,N_beads=N_beads,viz=True)
-    track = load_track('/mnt/raid/data/Karolina_HiChIP/coverage/gm12878_cohesin_hichip_mumbach_pulled.bw',region,chrom,N_beads,True)
+    
     # M = binding_matrix_from_bedpe("/mnt/raid/data/Trios/bedpe/interactions_maps/hg00731_CTCF_pooled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
-    print('Number of CTCF:',np.max([np.count_nonzero(L),np.count_nonzero(R)]))
-    path = make_folder(N_beads,N_lef,region,chrom,label='for_network_analysis')
-    sim = LoopSage(N_beads,N_lef,kappa,f,b,L,R,dists,r,None,path,track)
+    sim = LoopSage(region,chrom,bedpe_file)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,mode='Annealing',viz=True,vid=False,save=True)
-    # md = MD_LE(Ms,Ns,N_beads,burnin,MC_step,path)
-    # sim_heat = md.run_pipeline(write_files=True,plots=True)
-    # corr_exp_heat(sim_heat,bedpe_file,region,chrom,N_beads,path)
-    em = EM_LE(Ms,Ns,N_beads,burnin,MC_step,path)
-    sim_heat = em.run_pipeline(write_files=True,plots=True)
-    corr_exp_heat(sim_heat,bedpe_file,region,chrom,N_beads,path)
+    sim.run_EM()
 
 if __name__=='__main__':
     main()
