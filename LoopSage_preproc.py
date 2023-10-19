@@ -6,7 +6,7 @@ import pyBigWig
 import os
 from matplotlib.pyplot import figure
 
-def binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,normalization=False,viz=False):
+def binding_vectors_from_bedpe(bedpe_file,N_beads,region,chrom,normalization=False,viz=False):
     '''
     Definition of left and right CTCF binding potential.
 
@@ -64,7 +64,7 @@ def binding_vectors_from_bedpe_with_peaks(bedpe_file,N_beads,region,chrom,normal
         print('Median loop size:', np.median(distances))
         print('Maximum loop size:', np.max(distances))
 
-    return L, R, distances
+    return L, R, np.array(distances)
 
 def get_rnap_energy(path,region,chrom,N_beads,normalization):
     '''
