@@ -316,10 +316,6 @@ def main():
     N_beads,N_lef,kappa,f,b,r = 1000,50,100000,-1000,-1000,-1000
     N_steps, MC_step, burnin, T, T_min = int(1e4), int(5e2), 1000, 5,0
     region, chrom = [178421513, 179491193], 'chr1'
-    # region, chrom = [0,248387328], 'chr1'
-    # region, chrom = [178421513, 183769913], 'chr1'
-    # rnap_file = "/mnt/raid/data/encode/ChIP-Seq/ENCSR000EAD_POLR2A/ENCFF262GJK_pval_rep2.bigWig"
-    # bedpe_file = "/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe"
     bedpe_file = '/mnt/raid/data/Karolina_HiChIP/interactions_maps/gm12878_ctcf_hichip_mumbach_pulled_cleaned_2.bedpe'
     
     # M = binding_matrix_from_bedpe("/mnt/raid/data/Trios/bedpe/interactions_maps/hg00731_CTCF_pooled_2.bedpe",N_beads,[178421513,179491193],'chr1',False)
