@@ -24,7 +24,7 @@ def binding_vectors_from_bedpe(bedpe_file,N_beads,region,chrom,normalization=Fal
     '''
     # Read file and select the region of interest
     df = pd.read_csv(bedpe_file,sep='\t',header=None)
-    df = df[(df[1]>=region[0])&(df[5]<=region[1])&(df[0]==chrom)].reset_index(drop=True)
+    df = df[(df[1]>=region[0])&(df[2]>=region[0])&(df[4]>=region[0])&(df[5]>=region[0])&(df[5]<region[1])&(df[4]<region[1])&(df[1]<region[1])&(df[2]<region[1])&(df[0]==chrom)].reset_index(drop=True)
 
     # Convert hic coords into simulation beads
     resolution = (region[1]-region[0])//N_beads
@@ -97,7 +97,7 @@ def binding_matrix_from_bedpe(bedpe_file,N_beads,region,chrom,normalization=Fals
     
     # Read file and select the region of interest
     df = pd.read_csv(bedpe_file,sep='\t',header=None)
-    df = df[(df[1]>=region[0])&(df[5]<=region[1])&(df[0]==chrom)].reset_index(drop=True)
+    df = df[(df[1]>=region[0])&(df[2]>=region[0])&(df[4]>=region[0])&(df[5]>=region[0])&(df[5]<region[1])&(df[4]<region[1])&(df[1]<region[1])&(df[2]<region[1])&(df[0]==chrom)].reset_index(drop=True)
     
     # Convert hic coords into simulation beads
     resolution = (region[1]-region[0])//N_beads

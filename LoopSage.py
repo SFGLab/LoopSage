@@ -27,8 +27,8 @@ class LoopSage:
         '''
         Definition of simulation parameters and input files.
         
-        region (list): [start,end]
-        chrom (str): indicator of chromosome
+        region (list): [start,end].
+        chrom (str): indicator of chromosome.
         bedpe_file (str): path where is the bedpe file with CTCF loops.
         track_file (str): bigwig file with cohesin coverage.
         rnap_file (str): bigwig file with RNAP (or other protein of interest) coverage.
@@ -47,7 +47,7 @@ class LoopSage:
         self.kappa = 1e7 if kappa==None else kappa
         self.f = -1000 if f==None else f
         self.b = -self.N_beads if b==None else b
-        self.N_lef = self.N_beads//20
+        self.N_lef = self.N_beads//20 if N_lef==None else N_lef
         print('Number of LEFs:',self.N_lef)
         self.r = -self.N_beads if (r==None and rnap_file==None) else None
         self.states = np.full(self.N_beads,False)
@@ -195,7 +195,7 @@ class LoopSage:
             ms[i], ns[i] = self.unbind_bind()
         return ms, ns
     
-    def run_energy_minimization(self,N_steps,MC_step,burnin,T=1,T_min=0,mode='Metropolis',viz=False,vid=False,save=False):
+    def run_energy_minimization(self,N_steps,MC_step,burnin,T=1,T_min=0,poisson_choice=True,mode='Metropolis',viz=False,save=False):
         '''
         Implementation of the stochastic Monte Carlo simulation.
 
@@ -227,7 +227,7 @@ class LoopSage:
                 # Randomly choose a move (sliding or rebinding)
                 r = rd.choice([0,1,2])
                 if r==0:
-                    m_new, n_new = self.unbind_bind()
+                    m_new, n_new = self.unbind_bind(poisson_choice)
                     N_bind+=1
                 elif r==1:
                     m_new, n_new = self.slide_right(ms[j],ns[j])
@@ -244,8 +244,6 @@ class LoopSage:
 
                 # Save trajectories
                 self.Ms[j,i], self.Ns[j,i] = ms[j], ns[j]
-                if i%MC_step==0:
-                    if vid: draw_arcplot(Ms[:,i],Ns[:,i],self.N_beads,i//MC_step,self.path)
             
             # Compute Metrics
             if i%MC_step==0:
@@ -308,19 +306,24 @@ class LoopSage:
         corr_exp_heat(sim_heat,self.bedpe_file,self.region,self.chrom,self.N_beads,self.path)
 
     def run_MD(self):
-        md = MD_LE(self.Ms,self,Ns,self.N_beads,self.burnin,self.MC_step,self.path)
+        md = MD_LE(self.Ms,self.Ns,self.N_beads,self.burnin,self.MC_step,self.path)
         sim_heat = md.run_pipeline(write_files=True,plots=True)
         corr_exp_heat(sim_heat,self.bedpe_file,self.region,self.chrom,self.N_beads,self.path)
 
 def main():
     N_beads,N_lef,kappa,f,b,r = 1000,50,100000,-1000,-1000,-1000
-    N_steps, MC_step, burnin, T, T_min = int(1e4), int(5e2), 1000, 5,0
-    region, chrom = [178421513, 179491193], 'chr1'
-    bedpe_file = '/mnt/raid/data/Karolina_HiChIP/interactions_maps/gm12878_ctcf_hichip_mumbach_pulled_cleaned_2.bedpe'
+    N_steps, MC_step, burnin, T, T_min = int(1e4), int(2e2), 1000, 5,3
+    # region, chrom = [45770053,46036890], 'chr1'
+    # region, chrom = [107232171,107401124], 'chr9'
+    # region, chrom = [102967372,103172899], 'chr14'
+    # region, chrom = [84026766,84335144], 'chr1'
+    region, chrom = [88271457,88851999], 'chr10'
+    label=f'Petros_ko_{chrom}_{region[0]}_{region[1]}'
+    bedpe_file = '/mnt/raid/data/Petros_loops/ko_pooled_2.bedpe'
     
-    sim = LoopSage(region,chrom,bedpe_file)
-    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,mode='Annealing',viz=True,vid=False,save=True)
-    sim.run_EM()
+    sim = LoopSage(region,chrom,bedpe_file,label=label,N_lef=30)
+    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Annealing',viz=True,save=True)
+    sim.run_MD()
 
 if __name__=='__main__':
     main()

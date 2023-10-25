@@ -69,7 +69,7 @@ _struct_conn.ptnr2_label_atom_id
 def corr_exp_heat(mat_sim,bedpe_file,region,chrom,N_beads,path):
     # Read file and select the region of interest
     df = pd.read_csv(bedpe_file,sep='\t',header=None)
-    df = df[(df[1]>=region[0])&(df[5]<=region[1])&(df[0]==chrom)].reset_index(drop=True)
+    df = df[(df[1]>=region[0])&(df[2]>=region[0])&(df[4]>=region[0])&(df[5]>=region[0])&(df[5]<region[1])&(df[4]<region[1])&(df[1]<region[1])&(df[2]<region[1])&(df[0]==chrom)].reset_index(drop=True)
 
     # Convert hic coords into simulation beads
     resolution = (region[1]-region[0])//N_beads
