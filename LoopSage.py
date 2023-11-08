@@ -31,13 +31,13 @@ class LoopSage:
         chrom (str): indicator of chromosome.
         bedpe_file (str): path where is the bedpe file with CTCF loops.
         track_file (str): bigwig file with cohesin coverage.
-        bw_file (str): bigwig file with BWs (or other protein of interest) coverage.
+        bw_files (list of str): bigwig files with (or other protein of interest) coverage.
         N_beads (int): number of monomers in the polymer chain.
         N_lef (int): number of cohesins in the system.
         kappa (float): cohesing crossing coefficient of Hamiltonian.
         f (float): folding coeffient of Hamiltonian.
         b (float): binding coefficient of Hamiltonian.
-        r (float): optional parameter for RNApII loops in case that we want to include this kind of loops in simulation.
+        r (list): strength of each ChIP-Seq experinment.
         '''
 
         self.N_beads = round((region[1]-region[0])/(179491193-178421513)*1000) if N_beads==None else N_beads
@@ -201,7 +201,7 @@ class LoopSage:
             ms[i], ns[i] = self.unbind_bind()
         return ms, ns
     
-    def run_energy_minimization(self,N_steps,MC_step,burnin,T=1,T_min=0,poisson_choice=True,mode='Metropolis',viz=False,save=False):
+    def run_energy_minimization(self,N_steps,MC_step,burnin,T=1,T_min=0,poisson_choice=True,mode='Metropolis',viz=False,save=False, m_init=None, n_init=None):
         '''
         Implementation of the stochastic Monte Carlo simulation.
 
@@ -213,12 +213,17 @@ class LoopSage:
         mode (str): it can be either 'Metropolis' or 'Annealing'.
         viz (bool): True in case that user wants to see plots.
         vid (bool): it creates a funky video with loops how they extrude in 1D.
+        m_init (numpy array): to import initial state of preference for left positions of LEFs.
+        n_init (numpy array): to import initial state of preference for right positions of LEFs.
         '''
         self.Ti = T
         Ts = list()
         self.burnin, self.MC_step = burnin, MC_step 
         bi = burnin//MC_step
-        ms, ns = self.initialize()
+        if np.any(m_init==None) or np.any(n_init==None):
+            ms, ns = self.initialize()
+        else:
+            ms, ns = m_init, n_init
         E = self.get_E(ms,ns)
         Es,Ks,Fs,Bs,ufs, slides, unbinds = list(),list(),list(),list(),list(), list(), list()
         self.Ms, self.Ns = np.zeros((self.N_lef,N_steps)).astype(int), np.zeros((self.N_lef,N_steps)).astype(int)
@@ -323,10 +328,10 @@ class LoopSage:
 
 def main():
     N_steps, MC_step, burnin, T, T_min = int(1e4), int(2e2), 1000, 5,1
-    region, chrom = [45770053,46036890], 'chr1'
+    # region, chrom = [45770053,46036890], 'chr1'
     # region, chrom = [102967372,103172899], 'chr14'
     # region, chrom = [84026766,84335144], 'chr1'
-    # region, chrom = [88271457,88851999], 'chr10'
+    region, chrom = [88271457,88851999], 'chr10'
     label=f'Petros_wt1h'
     bedpe_file = '/mnt/raid/data/Petros_project/loops/wt1h_pooled_2.bedpe'
     # coh_track_file = '/mnt/raid/data/Petros_project/bw/RAD21_ChIPseq/mm_BMDM_WT_Rad21_heme_60min.bw'
