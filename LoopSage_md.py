@@ -59,7 +59,8 @@ class MD_LE:
 
         # Minimize energy
         print('Minimizing energy...')
-        simulation = Simulation(pdb.topology, self.system, integrator)
+        platform = mm.Platform.getPlatformByName('CUDA')
+        simulation = Simulation(pdb.topology, self.system, integrator, platform)
         simulation.reporters.append(StateDataReporter(stdout, (self.N_steps*sim_step)//10, step=True, totalEnergy=True, potentialEnergy=True, temperature=True))
         simulation.reporters.append(DCDReporter(self.path+'/other/stochastic_LE.dcd', 5))
         simulation.context.setPositions(pdb.positions)

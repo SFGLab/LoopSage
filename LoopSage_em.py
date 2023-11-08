@@ -61,7 +61,8 @@ class EM_LE:
             self.add_forcefield(ms,ns)
 
             # Minimize energy
-            simulation = Simulation(pdb.topology, self.system, integrator)
+            platform = mm.Platform.getPlatformByName('CUDA')
+            simulation = Simulation(pdb.topology, self.system, integrator, platform)
             simulation.context.setPositions(pdb.positions)
             simulation.minimizeEnergy(tolerance=0.001)
             self.state = simulation.context.getState(getPositions=True)

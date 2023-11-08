@@ -94,7 +94,7 @@ def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
     plt.ylim((np.min(Es)-10,-np.min(Es)))
     plt.xlabel('Monte Carlo Step', fontsize=16)
     # plt.yscale('symlog')
-    plt.legend(['Total Energy', 'Binding', 'Knotting', 'Folding'], fontsize=16)
+    plt.legend(['Total Energy', 'Binding', 'crossing', 'Folding'], fontsize=16)
     plt.grid()
 
     if path!=None:
@@ -140,16 +140,15 @@ def make_moveplots(unbinds, slides, path=None):
     plt.close()
 
 def temperature_biff_diagram(T_range, f=-500, b=-200,N_beads=500,N_coh=50, kappa=10000, file='CTCF_hg38_PeakSupport_2.bedpe'):
-    Bins, Knots, Folds, UFs = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
+    Bins, Cross, Folds, UFs = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
     for i, T in enumerate(tqdm(T_range)):
         L, R = binding_from_bedpe_with_peaks(file,N_beads,[48100000,48700000],'chr3',False)
-        sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R)
-        Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=2000,MC_step=20,T=T,mode='Metropolis',viz=False)
-        Bins[i], Knots[i], Folds[i], UFs[i] = np.average(Bs[10:]), np.average(Ks[10:]), np.average(Fs[10:]), np.average(ufs[10:])
+        sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,100,MC_step=20,T=T,mode='Metropolis',viz=False)
+        Bins[i], Cross[i], Folds[i], UFs[i] = np.average(Bs[10:]), np.average(Ks[10:]), np.average(Fs[10:]), np.average(ufs[10:])
     
     figure(figsize=(10, 8), dpi=600)
     plt.plot(T_range,np.abs(Bins),'ro-')
-    # plt.plot(T_range,Knots,'go-')
+    # plt.plot(T_range,Cross,'go-')
     plt.plot(T_range,np.abs(Folds),'bo-')
     plt.plot(T_range,np.abs(UFs),'go-')
     plt.ylabel('Metrics', fontsize=18)
@@ -161,20 +160,20 @@ def temperature_biff_diagram(T_range, f=-500, b=-200,N_beads=500,N_coh=50, kappa
     plt.savefig('temp_bif_plot.pdf',dpi=600)
     plt.close()
 
-    return Knots, Bins, Folds
+    return Cross, Bins, Folds
 
 def temperature_T_Ncoh_diagram(T_range, Ncoh_range=np.array([10,25,50,100]), f=-1000, b=-1000, kappa=100000, N_beads=1000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
     colors = ['red','green','magenta','blue']
     figure(figsize=(10, 6), dpi=600)
     for j, N_coh in tqdm(enumerate(Ncoh_range)):
         save_path = make_folder(N_beads,N_coh,[178421513, 179491193],'chr1',label='biff_diags')
-        Bins, Knots, Folds, UFs = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
+        Bins, Cross, Folds, UFs = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
         errFolds, errUFs = np.zeros(len(T_range)), np.zeros(len(T_range))
         for i, T in enumerate(T_range):
             L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N_beads,[178421513, 179491193],'chr1',False)
             sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,save_path)
             Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=10000,MC_step=100,T=T,burnin=10,mode='Metropolis',viz=False)
-            Bins[i], Knots[i], Folds[i], UFs[i] = np.average(Bs[10:]), np.average(Ks[10:]), np.average(Fs[10:])/f, np.average(ufs[10:])
+            Bins[i], Cross[i], Folds[i], UFs[i] = np.average(Bs[10:]), np.average(Ks[10:]), np.average(Fs[10:])/f, np.average(ufs[10:])
             errFolds[i], errUFs[i] = np.abs(np.std(Fs[10:])/f), np.std(ufs[10:])
         c = colors[j]
         N_CTCF = (np.count_nonzero(L)+np.count_nonzero(R))/2
@@ -191,7 +190,7 @@ def temperature_T_Ncoh_diagram(T_range, Ncoh_range=np.array([10,25,50,100]), f=-
     plt.savefig(f'Ncoh_temp_bif_plot_f{int(np.abs(f))}_b{int(np.abs(b))}.svg',format='svg',dpi=600)
     plt.close()
     
-    return Knots, Bins, Folds, UFs
+    return Cross, Bins, Folds, UFs
 
 def temperature_loop_distplot(T_range, N_coh=50, f=-1000, b=-1000, kappa=100000, N_beads=1000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
     colors = ['red','green','magenta','blue']
@@ -231,18 +230,18 @@ def fb_loop_distplot(fbs, N_coh=50, T=5, kappa=100000, N_beads=1000, file='/mnt/
     plt.savefig('fb_loop_length.pdf',format='pdf',dpi=600)
     plt.close()
 
-def knot_T_diagram(T_range, kappas, N_coh=10, f=-1000, b=-1000, N_beads=1000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
+def Cros_T_diagram(T_range, kappas, N_coh=10, f=-1000, b=-1000, N_beads=1000, file='/mnt/raid/data/encode/ChIAPET/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'):
     colors = ['red','green','magenta','blue']
     figure(figsize=(10, 6), dpi=600)
     for j, kappa in tqdm(enumerate(kappas)):
         save_path = make_folder(N_beads,N_coh,[178421513, 179491193],'chr1',label='biff_diags')
-        Bins, Knots, Folds, UFs, Kappas = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
+        Bins, Cross, Folds, UFs, Kappas = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
         errFolds, errUFs, errKs = np.zeros(len(T_range)), np.zeros(len(T_range)), np.zeros(len(T_range))
         for i, T in enumerate(T_range):
             L, R, dists = binding_vectors_from_bedpe_with_peaks(file,N_beads,[178421513, 179491193],'chr1',False)
             sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R,dists,save_path)
             Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps=10000,MC_step=100,T=T,burnin=10,mode='Metropolis',viz=False)
-            Bins[i], Knots[i], Folds[i], UFs[i], Kappas[i] = np.average(Bs[10:]), np.average(Ks[10:]), np.average(Fs[10:])/f, np.average(ufs[10:]), np.average(Ks[10:])/kappa
+            Bins[i], Cross[i], Folds[i], UFs[i], Kappas[i] = np.average(Bs[10:]), np.average(Ks[10:]), np.average(Fs[10:])/f, np.average(ufs[10:]), np.average(Ks[10:])/kappa
             errFolds[i], errUFs[i], errKs[i] = np.abs(np.std(Fs[10:])/f), np.std(ufs[10:]), np.std(Ks[10:])/kappa
         c = colors[j]
         
@@ -341,7 +340,7 @@ def correlation_plot(given_heatmap,T_range,path):
     plt.plot(T_range,pearsons,'bo-')
     plt.plot(T_range,spearmans,'ro-')
     plt.plot(T_range,kendals,'go-')
-    # plt.plot(T_range,Knots,'go-')
+    # plt.plot(T_range,Cross,'go-')
     plt.ylabel('Correlation with Experimental Heatmap', fontsize=16)
     plt.xlabel('Temperature', fontsize=16)
     # plt.yscale('symlog')
@@ -369,6 +368,27 @@ def coh_traj_plot(ms,ns,N_beads,path):
     save_path = path+'/plots/coh_trajectories.svg' if path!=None else 'coh_trajectories.svg'
     plt.savefig(save_path, format='svg', dpi=600)
     save_path = path+'/plots/coh_trajectories.pdf' if path!=None else 'coh_trajectories.pdf'
+    plt.savefig(save_path, format='pdf', dpi=600)
+    plt.close()
+
+def coh_probdist_plot(ms,ns,N_beads,path):
+    Ntime = len(ms[0,:])
+    M = np.zeros((N_beads,Ntime))
+    for ti in range(Ntime):
+        m,n = ms[:,ti], ns[:,ti]
+        M[m,ti]+=1
+        M[n,ti]+=1
+    dist = np.average(M,axis=1)
+
+    figure(figsize=(8, 6), dpi=600)
+    x = np.arange(N_beads)
+    plt.fill_between(x,dist)
+    plt.title('Probablity distribution of cohesin')
+    save_path = path+'/plots/coh_probdist.png' if path!=None else 'coh_trajectories.png'
+    plt.savefig(save_path, format='png', dpi=200)
+    save_path = path+'/plots/coh_probdist.svg' if path!=None else 'coh_trajectories.svg'
+    plt.savefig(save_path, format='svg', dpi=600)
+    save_path = path+'/plots/coh_probdist.pdf' if path!=None else 'coh_trajectories.pdf'
     plt.savefig(save_path, format='pdf', dpi=600)
     plt.close()
 
