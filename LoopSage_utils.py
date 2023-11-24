@@ -89,7 +89,7 @@ def corr_exp_heat(mat_sim,bedpe_file,region,chrom,N_beads,path):
     # pearson correlation calculation
     pears = pearsonr(th_vec,exp_vec)
     print('Pearson Correlation with experimental heatmap: ', pears[0])
-
+    
     fig, axs = plt.subplots(2, figsize=(15, 10))
     fig.suptitle(f'Estimated Pearson Correlation {pears[0]:.3f}',fontsize=18)
     axs[0].plot(exp_vec)
@@ -227,6 +227,43 @@ def get_coordinates_cif(file):
                 V.append([x, y, z])
     
     return np.array(V)
+
+def dist(p1: np.ndarray, p2: np.ndarray) -> float:
+    """Mierzy dystans w przestrzeni R^3"""
+    x1, y1, z1 = p1
+    x2, y2, z2 = p2
+    return ((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2) ** 0.5  # faster than np.linalg.norm
+
+def random_versor() -> np.ndarray:
+    """Losuje wersor"""
+    x = np.random.uniform(-1, 1)
+    y = np.random.uniform(-1, 1)
+    z = np.random.uniform(-1, 1)
+    d = (x ** 2 + y ** 2 + z ** 2) ** 0.5
+    return np.array([x / d, y / d, z / d])
+
+def self_avoiding_random_walk(n: int, step: float = 1.0, bead_radius: float = 0.5, epsilon: float = 0.001, two_dimensions=False) -> np.ndarray:
+    potential_new_step = [0, 0, 0]
+    while True:
+        points = [np.array([0, 0, 0])]
+        for _ in tqdm(range(n - 1)):
+            step_is_ok = False
+            trials = 0
+            while not step_is_ok and trials < 1000:
+                potential_new_step = points[-1] + step * random_versor()
+                if two_dimensions:
+                    potential_new_step[2] = 0
+                for j in points:
+                    d = dist(j, potential_new_step)
+                    if d < 2 * bead_radius - epsilon:
+                        trials += 1
+                        break
+                else:
+                    step_is_ok = True
+            points.append(potential_new_step)
+        points = np.array(points)
+        return points
+
 
 def get_coordinates_mm(mm_vec):
     '''

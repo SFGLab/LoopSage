@@ -12,7 +12,6 @@ from sys import stdout
 from mdtraj.reporters import HDF5Reporter
 from scipy import ndimage
 from openmm.app import PDBFile, PDBxFile, ForceField, Simulation, PDBReporter, PDBxReporter, DCDReporter, StateDataReporter, CharmmPsfFile
-from structuregenerator.generator import self_avoiding_random_walk
 from LoopSage_utils import *
 
 class EM_LE:
