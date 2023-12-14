@@ -12,42 +12,36 @@ Let's assume that each cohesin $i$ can be represented of two coordinates $(m_{i}
 
 The main idea of the algorithm is to ensemble loop extrusion from a Boltzmann probability distribution, with Hamiltonian,
 
-$$E = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\log(n_i-m_i)+\dfrac{\kappa}{N_{knot}}\sum_{i,j}K(m_i,n_i;m_j,n_j)+\dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)$$
+$$E = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\log(n_i-m_i)+\dfrac{\kappa}{N_{cross}}\sum_{i,j}K(m_i,n_i;m_j,n_j)+\dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)$$
 
-The first term corresponds to the folding of chromatin, and the second term is a penalty for the appearance of knots. Therefore, we have the function,
+The first term corresponds to the folding of chromatin, and the second term is a penalty for the appearance of crosss. Therefore, we have the function,
 $K(m_{i},n_{i};m_{j},n_{j})$ which takes the value 1 when $m_{i} < m_{j} < n_{i} < n_{j}$ or $m_{i}=m_{j}$ or $m_{i}=n_{j}$.
 
 These $L(\cdot), R(\cdot)$ functions are two functions that define the binding potential and they are orientation specific - so they are different for left and right position of cohesin (because CTCF motifs are orientation specific), therefore when we have a gap in these functions, it means presence of CTCF. These two functions are derived from data with CTCF binning and by running the script for probabilistic orientation. Moreover, by $N_{(\cdot)}$ we symbolize the normalization constants for each factor,
 
-$$N_{fold}=N_{coh}\cdot \langle n_i-m_i\rangle,\quad N_{knot}=N_{coh},\quad N_{bind}=\sum_{k}\left(L(k)+R(k)\right).$$
+$$N_{fold}=N_{coh}\cdot \langle n_i-m_i\rangle,\quad N_{cross}=N_{coh},\quad N_{bind}=\sum_{k}\left(L(k)+R(k)\right).$$
 
-Therefore, we define the folding, knotting and binding energy, which are also metrics that help us to understand the dynamics of our system,
+Therefore, we define the folding, crossing and binding energy, which are also metrics that help us to understand the dynamics of our system,
 
 $$E_{fold} = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\log(n_i-m_i),$$
 
 and
 
-$$E_{knot} = \dfrac{\kappa}{N_{knot}}\sum_{i,j}K(m_i,n_i;m_j,n_j),$$
+$$E_{cross} = \dfrac{\kappa}{N_{cross}}\sum_{i,j}K(m_i,n_i;m_j,n_j),$$
 
 and
 
-$$E_{bind} = \dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right)$$
+$$E_{bind} = \dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right).$$
 
-And we can write the energy differences as,
+An additional term which allows other protein factors that may act as barriers for the motion of LEFs can me optionally added,
 
-$$\Delta E_{fold} = \dfrac{f}{N_{fold}}\left(\log(n^{\prime}_i-m^{\prime}_i)-\log(n_i-m_i)\right),$$
+$$E_{bw}=\sum_{i=1}^{N_{\text{bw}}}\frac{r_{i}}{N_{bw,i}}\sum_{j=1}^{N_{lef}}\left(W_i(m_j)+W_i(n_j)\right),\qquad N_{bw,i} = \sum_{k}W_i(k)$$
 
-and
+where $N_{bw}$ is the number of \texttt{.BigWig} ChIP-Seq experiments that are imported for each one of the proteins of interest. The energy term $W_{i}(\cdot)$ it corresponds to the average values of the ChIP-Seq experiment $i$ for each loci of interest. Finally, $r_{i}$ it is a weight that corresponds each one of these experiments and by default it is set as $r_{i}=b/2$.
 
-$$\Delta E_{knot} = \dfrac{\kappa}{N_{knot}} \left( \sum_{j}K(m^{\prime}_i,n^{\prime}_i;m_j,n_j)-\sum_{j}K(m_i,n_i;m_j,n_j)\right)$$
+Thus,
 
-and
-
-$$\Delta E_{bind} = \dfrac{b}{N_{bind}}\left( L(m^{\prime}_i)+R(n^{\prime}_i)-L(m_i)-R(n_i)\right)$$
-
-where the prime values, symbolize the new coordinates of cohesin, if the new move is accepted. Thus,
-
-$$\Delta E = \Delta E_{fold}+\Delta E_{knot}+\Delta E_{bind}.$$
+$$\Delta E = \Delta E_{fold}+\Delta E_{cross}+\Delta E_{bind} + \Delta E_{bw}.$$
 
 In this manner we accept a move in two cases:
 
@@ -56,6 +50,9 @@ In this manner we accept a move in two cases:
 
 And of course, the result - the distribution of loops in equilibrium -  depends on temperature of Boltzmann distribution $T$.
 
+## Packages to install
+The following dependecies must be installed in the specific desktop environment that you would like to run the simulation pipeline,
+
 
 
 ## How to use?
@@ -63,14 +60,20 @@ And of course, the result - the distribution of loops in equilibrium -  depends 
 The implementation of the code is very easy and it can be described in the following lines,
 
 ```python
-N_beads,N_coh,kappa,f,b = 1000,50,100000,-500,-500
-N_steps, MC_step, burnin, T = int(1e4), int(1e2), 15, 2
-L, R = binding_from_bedpe_with_peaks("/mnt/raid/data/Zofia_Trios/bedpe/hg00731_CTCF_pulled_2.bedpe",N_beads,[212520553-50000,213377421+50000],'chr2',False)
-print('Number of CTCF:',np.max([np.count_nonzero(L),np.count_nonzero(R)]))
-sim = LoopSage(N_beads,N_coh,kappa,f,b,L,R)
-Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,mode='Annealing',viz=True,vid=True)
-md = MD_LE(Ms,Ns,N_beads,burnin,MC_step)
-md.run_pipeline(write_files=True,plots=True)
+N_steps, MC_step, burnin, T, T_min = int(1e4), int(2e2), 1000, 5,1
+region, chrom = [88271457,88851999], 'chr10'
+label=f'Petros_wt1h'
+bedpe_file = '/mnt/raid/data/Petros_project/loops/wt1h_pooled_2.bedpe'
+coh_track_file = '/mnt/raid/data/Petros_project/bw/RAD21_ChIPseq/mm_BMDM_WT_Rad21_heme_60min.bw'
+bw_file1 = '/mnt/raid/data/Petros_project/bw/BACH1_ChIPseq/mm_Bach1_1h_rep1_heme_merged.bw'
+bw_file2 = '/mnt/raid/data/Petros_project/bw/RNAPol_ChIPseq/WT-RNAPOLIIS2-1h-heme100-rep1_S5.bw'
+bw_files = [bw_file1,bw_file2]
+
+sim = LoopSage(region,chrom,bedpe_file,label=label,N_lef=50,N_beads=1000,bw_files=bw_files)
+Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Annealing',viz=True,save=True)
+sim.run_MD()
 ```
 
-Therefore, we define the main parameters of the simulation `N_beads,N_coh,kappa,f,b`, the parameters of Monte Carlo `N_steps, MC_step, burnin, T`, and we initialize the class `LoopSage()`. The command `sim.run_energy_minimization()` corresponds to the stochastic Monte Carlo simulation, and it produces a set of cohesin constraints as a result (`Ms, Ns`). Note that the stochastic simulation has two modes: `Annealing` and `Metropolis`. We feed cohesin constraints to the molecular simulation part of and we run `MD_LE()` simulation which produces a trajectory of 3d-structures, and the average heatmap.
+Firstly, we need to define the input files from which LoopSage would take the information to construct the potential. We define also the specific region that we would like to model. Therefore, in the code script above we define a `bedpe_file` from which information about the CTCF loops it is imported. In `coh_track_file` you can define the track file with some cohesin coverage of ChIP-Seq to determine the disribution of LEFs and allow preferncial binding in regions with higher signal. Then the user can define a list of BigWig files which are needed in case that user would like to model other protein factors.
+
+Then, we define the main parameters of the simulation `N_beads,N_coh,kappa,f,b` or we can choose the default ones (take care because it might be the case that they are not the appropriate ones), the parameters of Monte Carlo `N_steps, MC_step, burnin, T`, and we initialize the class `LoopSage()`. The command `sim.run_energy_minimization()` corresponds to the stochastic Monte Carlo simulation, and it produces a set of cohesin constraints as a result (`Ms, Ns`). Note that the stochastic simulation has two modes: `Annealing` and `Metropolis`. We feed cohesin constraints to the molecular simulation part of and we run `MD_LE()` or `MD_EM()` simulation which produces a trajectory of 3d-structures, and the average heatmap.
