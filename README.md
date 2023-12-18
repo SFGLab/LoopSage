@@ -57,7 +57,7 @@ The following dependecies must be installed in the specific desktop environment 
 
 ## How to use?
 
-The implementation of the code is very easy and it can be described in the following lines,
+The main script is `LoopSage.py`. The implementation of the code is very easy and it can be described in the following lines,
 
 ```python
 N_steps, MC_step, burnin, T, T_min = int(1e4), int(2e2), 1000, 5,1
@@ -79,7 +79,7 @@ Firstly, we need to define the input files from which LoopSage would take the in
 Then, we define the main parameters of the simulation `N_beads,N_coh,kappa,f,b` or we can choose the default ones (take care because it might be the case that they are not the appropriate ones), the parameters of Monte Carlo `N_steps, MC_step, burnin, T`, and we initialize the class `LoopSage()`. The command `sim.run_energy_minimization()` corresponds to the stochastic Monte Carlo simulation, and it produces a set of cohesin constraints as a result (`Ms, Ns`). Note that the stochastic simulation has two modes: `Annealing` and `Metropolis`. We feed cohesin constraints to the molecular simulation part of and we run `MD_LE()` or `MD_EM()` simulation which produces a trajectory of 3d-structures, and the average heatmap.
 
 ### Output Files
-In the output files, simulation produces one folder with 4 subfolders. In subfolder plots, you can find plots that are the diagnopstics of the algorithm. One of the most basic results you should see is the trajectories of cohesins (LEFs). this diagram should look like that,
+In the output files, simulation produces one folder with 4 subfolders. In subfolder plots, you can find `plots` that are the diagnopstics of the algorithm. One of the most basic results you should see is the trajectories of cohesins (LEFs). this diagram should look like that,
 
 ![coh_trajectories](https://github.com/SFGLab/LoopSage/assets/49608786/f73ffd2b-8359-4c6d-958b-9a770d4834ba)
 
@@ -89,4 +89,13 @@ In this diagram, each LEF is represented by a different colour. In case of Simul
 
 Good cohesin trajectory diagrams should be like the ones previously shown, which means that we do not want to see many unoccupied (white) regions, but we also do not like to see static loops. If the loops are static then it is better to choose higher temperature, or bigger number of LEFs. If the loops are too small, maybe it is better to choose smaller temperature.
 
-Now, to reassure that our algorithm works well we need to observe some fundamental diagnostics of Monte Carlo algorithms.
+Now, to reassure that our algorithm works well we need to observe some fundamental diagnostics of Monte Carlo algorithms. Some other important diagnostics can be seen in the following picture,
+
+![github_diagnostics](https://github.com/SFGLab/LoopSage/assets/49608786/b90e2355-be84-47c4-906f-5a2a62497b26)
+
+In graph A, we can see the plot of the energy as a function of simulation time. In Metropolis after some steps, the simulation should reach equillibrium after the defined burnin period (blue vertical line). In case of Simulated Annealing, the energy should decrease as function of time because the temperature decreases, and thus the energy should not be conserved. Autocorrelations (B), show us if the thermodyncamic ensembles that we obtained are autocorrelated or not. The Monte Carlo step (sampling frequency) should be big enough so as to have small autocorrelations (<0.5). The averaged heatmap (C), shows the simulated heatmap, after averaging inversed all-versus-all distances of the region of interest. Finally, (D) shows the Pearson correlation between projected 1D signal of heatmap of experimental and simulated data.
+
+In the output folder there are another three subfolders: 
+* `pdbs` has the ensembles of 3D structures in `.cif` format (it can open with vizualization software Chimera: https://www.cgl.ucsf.edu/chimera/),
+* `heatmaps` with the inversed all-versus-all distance heatmap of each one of these structures.
+* `other` here are some numpy arrays and some computed statistics. Numpy arrays like `Ms` and `Ns` have the degrees of freedoms of LEFs over time, then `Fs, Ks, Es` they have folding, corssing energy and total energy over time. `Ts` is the temperature over time. And finally in `other.txt` you can see the statistics of the simulation and the input parameters. In `correlations.txt` you can find a file with Pearson, Spearmann and Kendau tau correlations between estimated and experimental data. We provide an optimistic simulations where zeros of the signal are taken into account, and a pessimistic one where the zeros are not taken into account.
