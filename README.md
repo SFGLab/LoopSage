@@ -66,6 +66,8 @@ The following dependecies must be installed in the specific desktop environment 
 
 You can find an Anaconda environment file in our repository `biosym.yaml`.
 
+For faster computations use CUDA toolkit: https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=20.04&target_type=deb_local.
+
 ## How to use?
 
 The main script is `LoopSage.py`. The implementation of the code is very easy and it can be described in the following lines,
