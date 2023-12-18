@@ -99,3 +99,7 @@ In the output folder there are another three subfolders:
 * `pdbs` has the ensembles of 3D structures in `.cif` format (it can open with vizualization software Chimera: https://www.cgl.ucsf.edu/chimera/),
 * `heatmaps` with the inversed all-versus-all distance heatmap of each one of these structures.
 * `other` here are some numpy arrays and some computed statistics. Numpy arrays like `Ms` and `Ns` have the degrees of freedoms of LEFs over time, then `Fs, Ks, Es` they have folding, corssing energy and total energy over time. `Ts` is the temperature over time. And finally in `other.txt` you can see the statistics of the simulation and the input parameters. In `correlations.txt` you can find a file with Pearson, Spearmann and Kendau tau correlations between estimated and experimental data. We provide an optimistic simulations where zeros of the signal are taken into account, and a pessimistic one where the zeros are not taken into account.
+
+An example, illustrated with Chimera software, simulated trajectory of structures after running Simulated Annealing and molecular dynamics.
+
+![siman_traj_GitHub](https://github.com/SFGLab/LoopSage/assets/49608786/c6626641-f709-46e0-b01b-42566b1829ef)
