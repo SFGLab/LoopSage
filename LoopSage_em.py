@@ -15,7 +15,7 @@ from openmm.app import PDBFile, PDBxFile, ForceField, Simulation, PDBReporter, P
 from LoopSage_utils import *
 
 class EM_LE:
-    def __init__(self,M,N,N_beads,burnin,MC_step,path):
+    def __init__(self,M,N,N_beads,burnin,MC_step,path,platform):
         '''
         M, N (np arrays): Position matrix of two legs of cohesin m,n. 
                           Rows represent  loops/cohesins and columns represent time
@@ -27,6 +27,7 @@ class EM_LE:
         self.N_coh, self.N_steps = M.shape
         self.N_beads, self.step, self.burnin = N_beads, MC_step, burnin//MC_step
         self.path = path
+        self.platform = platform
     
     def run_pipeline(self,crash_step=5,write_files=False,plots=False):
         '''
@@ -60,7 +61,7 @@ class EM_LE:
             self.add_forcefield(ms,ns)
 
             # Minimize energy
-            platform = mm.Platform.getPlatformByName('CUDA')
+            platform = mm.Platform.getPlatformByName(self.platform)
             simulation = Simulation(pdb.topology, self.system, integrator, platform)
             simulation.context.setPositions(pdb.positions)
             simulation.minimizeEnergy(tolerance=0.001)

@@ -1,5 +1,4 @@
 import imageio
-import os
 import shutil
 import numpy as np
 import random as rd
@@ -12,7 +11,7 @@ from matplotlib.pyplot import cm
 import seaborn as sns
 from statsmodels.graphics.tsaplots import plot_acf
 import scipy.stats
-from LoopSage import *
+# from LoopSage import *
 from tqdm import tqdm
 from scipy import stats
 
@@ -80,10 +79,7 @@ def make_gif(N,path=None):
     save_path = path+"/plots/arcplots/" if path!=None else "/plots/arcplots/"
     shutil.rmtree(save_path)
 
-def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
-    try:
-        os.mkdir('plots')
-    except OSError as error: pass
+def make_timeplots(Es, Bs, Ks, Fs, burnin, mode, path=None):
     figure(figsize=(10, 8), dpi=600)
     plt.plot(Es, 'k')
     plt.plot(Bs, 'cyan')
@@ -107,7 +103,13 @@ def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
     plt.close()
 
     # Autocorrelation plot
-    plot_acf(Fs, title=None, lags=len(Fs)//2)
+    if mode=='Annealing':
+        x = np.arange(0,len(Fs[burnin:])) 
+        p3 = np.poly1d(np.polyfit(x, Fs[burnin:], 3))
+        ys = np.array(Fs)[burnin:]-p3(x)
+    else:
+        ys = np.array(Fs)[burnin:]
+    plot_acf(ys, title=None, lags = len(np.array(Fs)[burnin:])//2)
     plt.ylabel("Autocorrelations", fontsize=16)
     plt.xlabel("Lags", fontsize=16)
     plt.grid()
@@ -121,9 +123,6 @@ def make_timeplots(Es, Bs, Ks, Fs, burnin, path=None):
     plt.close()
 
 def make_moveplots(unbinds, slides, path=None):
-    try:
-        os.mkdir('plots')
-    except OSError as error: pass
     figure(figsize=(10, 8), dpi=600)
     plt.plot(unbinds, 'blue')
     plt.plot(slides, 'red')

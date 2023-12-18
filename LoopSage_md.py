@@ -15,7 +15,7 @@ from openmm.app import PDBFile, PDBxFile, ForceField, Simulation, PDBReporter, P
 from LoopSage_utils import *
 
 class MD_LE:
-    def __init__(self,M,N,N_beads,burnin,MC_step,path):
+    def __init__(self,M,N,N_beads,burnin,MC_step,path,platform):
         '''
         M, N (np arrays): Position matrix of two legs of cohesin m,n. 
                           Rows represent  loops/cohesins and columns represent time
@@ -27,6 +27,7 @@ class MD_LE:
         self.N_coh, self.N_steps = M.shape
         self.N_beads, self.step, self.burnin = N_beads, MC_step, burnin//MC_step
         self.path = path
+        self.platform = platform
     
     def run_pipeline(self,run_MD=True,sim_step=5,write_files=False,plots=False):
         '''
@@ -58,7 +59,7 @@ class MD_LE:
 
         # Minimize energy
         print('Minimizing energy...')
-        platform = mm.Platform.getPlatformByName('CUDA')
+        platform = mm.Platform.getPlatformByName(self.platform)
         simulation = Simulation(pdb.topology, self.system, integrator, platform)
         simulation.reporters.append(StateDataReporter(stdout, (self.N_steps*sim_step)//10, step=True, totalEnergy=True, potentialEnergy=True, temperature=True))
         simulation.reporters.append(DCDReporter(self.path+'/other/stochastic_LE.dcd', 5))
@@ -74,6 +75,7 @@ class MD_LE:
         # Run molecular dynamics simulation
         if run_MD:
             print('Running molecular dynamics (wait for 10 steps)...')
+            start = time.time()
             heats = list()
             for i in range(1,self.N_steps):
                 for nn in range(self.N_coh):
@@ -89,8 +91,10 @@ class MD_LE:
                     save_path = self.path+f'/heatmaps/heat_{i//self.step-self.burnin}.svg' if write_files else None
                     heats.append(get_heatmap(self.state.getPositions(),save_path=save_path,save=write_files))
                     time.sleep(5)
+            end = time.time()
+            elapsed = end - start
 
-            print('Everything is done bro! Simulation finished succesfully!')
+            print(f'Everything is done! Simulation finished succesfully!\nMD finished in {elapsed/60:.2f} minutes.\n')
 
             self.avg_heat = np.average(heats,axis=0)
             self.std_heat = np.std(heats,axis=0)

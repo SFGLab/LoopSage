@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import distance
 from matplotlib.colors import LinearSegmentedColormap
-from scipy.stats.stats import pearsonr
+from scipy.stats.stats import pearsonr, spearmanr, kendalltau
 # from LoCR import *
 from tqdm import tqdm
 
@@ -82,16 +82,24 @@ def corr_exp_heat(mat_sim,bedpe_file,region,chrom,N_beads,path):
         if df[7][i]>=0: exp_vec[x]+=df[6][i]
         if df[8][i]>=0: exp_vec[y]+=df[6][i]
         if df[7][i]>=0: th_vec[x]+=mat_sim[x,y]
-        if df[8][i]>=0: th_vec[y]+=mat_sim[x,y]
-    mask1, mask2 = exp_vec==0, th_vec==0
-    exp_vec, th_vec = exp_vec[~mask1], th_vec[~mask2]
+        if df[8][i]>=0: th_vec[y]+=mat_sim[x,y]        
 
     # pearson correlation calculation
-    pears = pearsonr(th_vec,exp_vec)
-    print('Pearson Correlation with experimental heatmap: ', pears[0])
-    
+    pears, pval1 = pearsonr(th_vec,exp_vec)
+    spear, pval2 = spearmanr(th_vec,exp_vec)
+    kendal, pval3 = kendalltau(th_vec,exp_vec)
+    print(f'Pearson Correlation with experimental heatmap: {pears:.3f} with pvalue {pval1}.')
+    print(f'Spearman Correlation with experimental heatmap: {spear:.3f} with pvalue {pval2}.')
+    print(f'Kendall Correlation with experimental heatmap: {kendal:.3f} with pvalue {pval3}.\n')
+
+    f = open(path+'/other/correlations.txt', "w")
+    f.write('---- Optimistic Estimations ----\n')
+    f.write(f'Pearson Correlation with experimental heatmap: {pears:.3f} with pvalue {pval1}.\n')
+    f.write(f'Spearman Correlation with experimental heatmap: {spear:.3f} with pvalue {pval2}.\n')
+    f.write(f'Kendall Correlation with experimental heatmap: {kendal:.3f} with pvalue {pval3}.\n\n')
+
     fig, axs = plt.subplots(2, figsize=(15, 10))
-    fig.suptitle(f'Estimated Pearson Correlation {pears[0]:.3f}',fontsize=18)
+    fig.suptitle(f'Estimated Pearson Correlation {pears:.3f}',fontsize=18)
     axs[0].plot(exp_vec)
     axs[0].set_ylabel('Experimental Signal',fontsize=16)
     axs[1].plot(th_vec)
@@ -100,6 +108,18 @@ def corr_exp_heat(mat_sim,bedpe_file,region,chrom,N_beads,path):
     fig.savefig(path+'/plots/pearson.png',dpi=600)
     fig.savefig(path+'/plots/pearson.pdf',dpi=600)
     fig.show()
+
+    mask1, mask2 = exp_vec==0, th_vec==0
+    exp_vec, th_vec = exp_vec[~mask1], th_vec[~mask2]
+    pears, pval1 = pearsonr(th_vec,exp_vec)
+    spear, pval2 = spearmanr(th_vec,exp_vec)
+    kendal, pval3 = kendalltau(th_vec,exp_vec)
+
+    f.write('---- Pessimistic Estimations ----\n')
+    f.write(f'Pearson Correlation with experimental heatmap: {pears:.3f} with pvalue {pval1}.\n')
+    f.write(f'Spearman Correlation with experimental heatmap: {spear:.3f} with pvalue {pval2}.\n')
+    f.write(f'Kendall Correlation with experimental heatmap: {kendal:.3f} with pvalue {pval3}.\n\n')
+    f.close()
 
     return pears
 

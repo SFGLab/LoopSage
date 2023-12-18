@@ -60,11 +60,14 @@ def binding_vectors_from_bedpe(bedpe_file,N_beads,region,chrom,normalization=Fal
         axs[1].set_xlabel('Genomic Distance (with simumation beads as a unit)',fontsize=16)
         fig.show()
 
-        print('Average loop size:', np.average(distances))
-        print('Median loop size:', np.median(distances))
-        print('Maximum loop size:', np.max(distances))
+    distances = np.array(distances)
+    print('Average loop size:', np.average(distances))
+    print('Median loop size:', np.median(distances))
+    print('Maximum loop size:', np.max(distances))
+    print('Average Initial loop size <average loop size>/8=',np.average(distances)/8)
+    print('Average logarithmic loop size',np.average(np.log(distances+1)))
 
-    return L, R, np.array(distances)
+    return L, R, distances
 
 def get_rnap_energy(path,region,chrom,N_beads,normalization):
     '''
