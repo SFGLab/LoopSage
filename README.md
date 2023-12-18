@@ -21,18 +21,6 @@ These $L(\cdot), R(\cdot)$ functions are two functions that define the binding p
 
 $$N_{fold}=N_{coh}\cdot \langle n_i-m_i\rangle,\quad N_{cross}=N_{coh},\quad N_{bind}=\sum_{k}\left(L(k)+R(k)\right).$$
 
-Therefore, we define the folding, crossing and binding energy, which are also metrics that help us to understand the dynamics of our system,
-
-$$E_{fold} = \dfrac{f}{N_{fold}}\sum_{i=1}^{N_{coh}}\log(n_i-m_i),$$
-
-and
-
-$$E_{cross} = \dfrac{\kappa}{N_{cross}}\sum_{i,j}K(m_i,n_i;m_j,n_j),$$
-
-and
-
-$$E_{bind} = \dfrac{b}{N_{bind}}\sum_{i=1}^{N_{coh}}\left(L(m_i)+R(n_i)\right).$$
-
 An additional term which allows other protein factors that may act as barriers for the motion of LEFs can me optionally added,
 
 $$E_{bw}=\sum_{i=1}^{N_{\text{bw}}}\frac{r_{i}}{N_{bw,i}}\sum_{j=1}^{N_{lef}}\left(W_i(m_j)+W_i(n_j)\right),\qquad N_{bw,i} = \sum_{k}W_i(k)$$
