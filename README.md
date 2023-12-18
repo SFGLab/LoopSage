@@ -96,7 +96,7 @@ In the output files, simulation produces one folder with 4 subfolders. In subfol
 
 ![coh_trajectories](https://github.com/SFGLab/LoopSage/assets/49608786/f73ffd2b-8359-4c6d-958b-9a770d4834ba)
 
-In this diagram, each LEF is represented by a different colour. In case of Simulated Annealing, LEFs should shape shorter loops in the first simulation steps, since they have higher kinetic energy due to the high temperature, and very stable large loops in the final steps if the final temperature $T_f$ is low enough. Horizontal lines represent the presence of CTCF points. In case of Metropolis, the distribution of LEFs should look more stable,
+In this diagram, each LEF is represented by a different colour. In case of Simulated Annealing, LEFs should shape shorter loops in the first simulation steps, since they have higher kinetic energy due to the high temperature, and very stable large loops in the final steps if the final temperature $T_f$ is low enough. Horizontal lines represent the presence of CTCF points. In case of Metropolis, the distribution of LEFs should look invariant in respect to computational time,
 
 ![coh_trajectories](https://github.com/SFGLab/LoopSage/assets/49608786/b48e2383-2509-4c68-a726-91a5e61aabf3)
 
