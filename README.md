@@ -53,7 +53,18 @@ And of course, the result - the distribution of loops in equilibrium -  depends 
 ## Packages to install
 The following dependecies must be installed in the specific desktop environment that you would like to run the simulation pipeline,
 
+* scikit-learn==1.3.2
+* seaborn==0.13.0
+* sewar==0.4.6
+* openmm==0.2
+* mdtraj=1.9.9
+* pandas=2.1.3
+* pybigwig==0.3.22
+* pillow==10.1.0
+* scipy=1.11
+* etc.
 
+You can find an Anaconda environment file in our repository `biosym.yaml`.
 
 ## How to use?
 
