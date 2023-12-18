@@ -40,23 +40,23 @@ class LoopSage:
         r (list): strength of each ChIP-Seq experinment.
         '''
 
-        self.N_beads = round((region[1]-region[0])/(179491193-178421513)*1000) if N_beads==None else N_beads
+        self.N_beads = N_beads
         self.N_bws = len(bw_files) if np.all(bw_files!=None) else 0
         print('Number of beads:',self.N_beads)
         self.chrom, self.region = chrom, region
         self.bedpe_file, self.bw_files, self.track_file = bedpe_file, bw_files, track_file
         self.preprocessing()
         self.kappa = 1e7 if kappa==None else kappa
-        self.f = -1000 if f==None else f
-        self.b = self.f if b==None else b
-        self.N_lef = self.N_beads//20 if N_lef==None else N_lef
-        print('Number of LEFs:',self.N_lef)
+        self.b = -self.N_beads if b==None else b
         self.r = np.full(self.N_bws,-self.N_beads/5) if (np.any(r==None) and self.N_bws>0) else r
         self.states = np.full(self.N_beads,False)
         self.avg_loop, self.max_loop = int(np.average(self.dists))+1, int(np.max(self.dists))+1
         self.log_avg_loop = np.average(np.log(self.dists+1))
         self.params = stats.maxwell.fit(self.dists)
         self.loop_pdist = stats.maxwell.pdf(np.arange(self.N_beads), *self.params)
+        self.N_lef = self.N_CTCF if N_lef==None else N_lef
+        print('Number of LEFs:',self.N_lef)
+        self.f = -1000*np.sqrt(self.log_avg_loop/3.5)*self.N_CTCF/self.N_lef if f==None else f
         self.path = make_folder(self.N_beads,self.N_lef,self.region,self.chrom,label=label)
     
     def E_bind(self,ms,ns):
@@ -293,7 +293,7 @@ class LoopSage:
         if viz: make_timeplots(Es, Bs, Ks, Fs, bi, mode, self.path)
         if viz: coh_probdist_plot(self.Ms,self.Ns,self.N_beads,self.path)
         if viz and self.N_beads<=2000: stochastic_heatmap(self.Ms,self.Ns,MC_step,self.N_beads,self.path)
-        if viz: make_loop_hist(self.Ms,self.Ns,self.path)
+        if viz and self.N_beads<=2000: make_loop_hist(self.Ms,self.Ns,self.path)
         
         return Es, self.Ms, self.Ns, Bs, Ks, Fs, ufs
 
@@ -318,14 +318,14 @@ class LoopSage:
         corr_exp_heat(sim_heat,self.bedpe_file,self.region,self.chrom,self.N_beads,self.path)
 
 def main():
-    N_steps, MC_step, burnin, T, T_min = int(1e4), int(1e2), 1000, 5,1
+    N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 5,1
     
     # For method paper
     # region, chrom = [178421513,179491193], 'chr1'
     # region, chrom = [225236830,226046745], 'chr1'
     # region, chrom = [157237518,158076910], 'chr2'
     # region, chrom = [212470553,213427421], 'chr2'
-    region, chrom = [165000000,171000000], 'chr1'
+    region, chrom =[165000000,171000000], 'chr1'
 
     label=f'method_paper_Annealing'
     bedpe_file = '/home/skorsak/Documents/data/method_paper_data/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'
@@ -334,9 +334,9 @@ def main():
     # bw_file2 = '/home/skorsak/Documents/data/Petros_project/bw/RNAPol_ChIPseq/WT-RNAPOLIIS2-1h-heme100-rep1_S5.bw'
     # bw_files = [bw_file1,bw_file2]
     
-    sim = LoopSage(region,chrom,bedpe_file,label=label,N_lef=50,N_beads=5000,f=-6000,b=-3000)
+    sim = LoopSage(region,chrom,bedpe_file,label=label,N_beads=5000)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Annealing',viz=True,save=True)
-    sim.run_MD('CUDA')
+    sim.run_EM('CUDA')
 
 if __name__=='__main__':
     main()
