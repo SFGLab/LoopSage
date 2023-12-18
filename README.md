@@ -79,4 +79,14 @@ Firstly, we need to define the input files from which LoopSage would take the in
 Then, we define the main parameters of the simulation `N_beads,N_coh,kappa,f,b` or we can choose the default ones (take care because it might be the case that they are not the appropriate ones), the parameters of Monte Carlo `N_steps, MC_step, burnin, T`, and we initialize the class `LoopSage()`. The command `sim.run_energy_minimization()` corresponds to the stochastic Monte Carlo simulation, and it produces a set of cohesin constraints as a result (`Ms, Ns`). Note that the stochastic simulation has two modes: `Annealing` and `Metropolis`. We feed cohesin constraints to the molecular simulation part of and we run `MD_LE()` or `MD_EM()` simulation which produces a trajectory of 3d-structures, and the average heatmap.
 
 ### Output Files
-In the output files, simulation produces one folder with 4 subfolders. In subfolder plots, you can find plots that are the diagnopstics of the algorithm. 
+In the output files, simulation produces one folder with 4 subfolders. In subfolder plots, you can find plots that are the diagnopstics of the algorithm. One of the most basic results you should see is the trajectories of cohesins (LEFs). this diagram should look like that,
+
+![coh_trajectories](https://github.com/SFGLab/LoopSage/assets/49608786/f73ffd2b-8359-4c6d-958b-9a770d4834ba)
+
+In this diagram, each LEF is represented by a different colour. In case of Simulated Annealing, LEFs should shape shorter loops in the first simulation steps, since they have higher kinetic energy due to the high temperature, and very stable large loops in the final steps if the final temperature $T_f$ is low enough. Horizontal lines represent the presence of CTCF points. In case of Metropolis, the distribution of LEFs should look more stable,
+
+![coh_trajectories](https://github.com/SFGLab/LoopSage/assets/49608786/b48e2383-2509-4c68-a726-91a5e61aabf3)
+
+Good cohesin trajectory diagrams should be like the ones previously shown, which means that we do not want to see many unoccupied (white) regions, but we also do not like to see static loops. If the loops are static then it is better to choose higher temperature, or bigger number of LEFs. If the loops are too small, maybe it is better to choose smaller temperature.
+
+Now, to reassure that our algorithm works well we need to observe some fundamental diagnostics of Monte Carlo algorithms.
