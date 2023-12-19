@@ -283,7 +283,9 @@ class LoopSage:
             np.save(self.path+'/other/Ms.npy',self.Ms)
             np.save(self.path+'/other/Ns.npy',self.Ns)
             np.save(self.path+'/other/Ts.npy',Ts)
+            np.save(self.path+'/other/ufs.npy',ufs)
             np.save(self.path+'/other/Es.npy',Es)
+            np.save(self.path+'/other/Bs.npy',Bs)
             np.save(self.path+'/other/Fs.npy',Fs)
             np.save(self.path+'/other/Ks.npy',Ks)
         
