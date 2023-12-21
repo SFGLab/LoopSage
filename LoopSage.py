@@ -291,7 +291,6 @@ class LoopSage:
             np.save(self.path+'/other/Ks.npy',Ks)
         
         # Some vizualizations
-        if self.path!=None: save_info(self.N_beads,self.N_lef,self.N_CTCF,self.kappa,self.f,self.b,self.avg_loop,self.path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs)
         if viz: coh_traj_plot(self.Ms,self.Ns,self.N_beads, self.path)
         if viz: make_timeplots(Es, Bs, Ks, Fs, bi, mode, self.path)
         if viz: coh_probdist_plot(self.Ms,self.Ns,self.N_beads,self.path)
