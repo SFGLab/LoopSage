@@ -11,9 +11,20 @@ from matplotlib.pyplot import cm
 import seaborn as sns
 from statsmodels.graphics.tsaplots import plot_acf
 import scipy.stats
-# from LoopSage import *
+import hicstraw
 from tqdm import tqdm
 from scipy import stats
+
+def show_hic(path,chrom,region,resolution=5000):
+    hic = hicstraw.HiCFile(path)
+    matrix_object = hic.getMatrixZoomData(chrom, chrom, "observed", "KR", "BP", 5000)
+    mat = matrix_object.getRecordsAsMatrix(region[0],region[1], region[0], region[1])
+    figure(figsize=(10, 10))
+    plt.imshow(mat ,cmap='Reds',vmax=np.average(mat)+np.std(mat))
+    plt.savefig('hic.svg',format='svg',dpi=500)
+    plt.savefig('hic.png',format='png',dpi=500)
+    plt.savefig('hic.pdf',format='pdf',dpi=500)
+    plt.show()
 
 def make_loop_hist(Ms,Ns,path=None):
     Ls = np.abs(Ns-Ms).flatten()
@@ -46,29 +57,6 @@ def make_loop_hist(Ms,Ns,path=None):
         plt.savefig(save_path,format='svg',dpi=600)
         save_path = path+'/plots/ij_prob.pdf'
         plt.savefig(save_path,format='pdf',dpi=600)
-    plt.close()
-
-    m_idx, m_counts = np.unique(Ms, return_counts=True)
-    n_idx, n_counts = np.unique(Ns, return_counts=True)
-    Nm, Nn = np.sum(m_counts), np.sum(n_counts)
-    N_beads = np.max([np.max(m_idx),np.max(n_idx)])+1
-    m_probs, n_probs = np.zeros(N_beads), np.zeros(N_beads)
-    m_probs[m_idx], n_probs[n_idx] = m_counts/Nm, n_counts/Nn
-    prob_mat = np.outer(m_probs,n_probs)
-    m_non, n_non = np.nonzero(prob_mat)
-    nm_diff, nm_count_probs = np.zeros(len(m_non)), np.zeros(len(m_non))
-    for i in range(len(m_non)):
-        nm_count_probs[i] = prob_mat[m_non[i], n_non[i]]
-        nm_diff[i] = np.abs(m_non[i] - n_non[i])
-    count_df = pd.DataFrame()
-    count_df['Length'] = nm_diff
-    count_df['Count'] = nm_count_probs*Nm
-    sns.displot(data=count_df,x='Length',y='Count',color="blue",cbar=True)
-    plt.xscale('log')
-    plt.yscale('log')
-    if path!=None:
-        save_path = path+'/plots/count_length.png'
-        plt.savefig(save_path,format='png',dpi=200)
     plt.close()
 
 def make_gif(N,path=None):
@@ -427,3 +415,40 @@ def stochastic_heatmap(ms,ns,step,L,path,comm_prop=True,fill_square=True):
     plt.savefig(save_path,format='pdf',dpi=500)
     # plt.colorbar()
     plt.close()
+
+def combine_matrices(path_upper,path_lower,label_upper,label_lower,th1=0,th2=50,color="Reds"):
+    mat1 = np.load(path_upper)
+    mat2 = np.load(path_lower)
+    mat1 = mat1/np.average(mat1)*10
+    mat2 = mat2/np.average(mat2)*10
+    L1 = len(mat1)
+    L2 = len(mat2)
+
+    ratio = 1
+    if L1!=L2:
+        if L1>L2:
+            mat1 = average_pooling(mat1,dim_new=L2)
+            ratio = L1//L2
+        else:
+            mat2 = average_pooling(mat2,dim_new=L1)
+            
+    print('1 pixel of heatmap corresponds to {} bp'.format(ratio*5000))
+    exp_tr = np.triu(mat1)
+    sim_tr = np.tril(mat2)
+    full_m = exp_tr+sim_tr
+
+    arialfont = {'fontname':'Arial'}
+
+    figure(figsize=(10, 10))
+    plt.imshow(full_m ,cmap=color,vmin=th1,vmax=th2)
+    plt.text(750,250,label_upper,ha='right',va='top',fontsize=30)
+    plt.text(250,750,label_lower,ha='left',va='bottom',fontsize=30)
+    # plt.xlabel('Genomic Distance (x5kb)',fontsize=16)
+    # plt.ylabel('Genomic Distance (x5kb)',fontsize=16)
+    plt.xlabel('Genomic Distance (x5kb)',fontsize=20)
+    plt.ylabel('Genomic Distance (x5kb)',fontsize=20)
+    # plt.title('Experimental (upper triangle) versus simulation (lower triangle) heatmap',fontsize=25)
+    plt.savefig('comparison_reg3.svg',format='svg',dpi=500)
+    plt.savefig('comparison_reg3.png',format='png',dpi=500)
+    plt.savefig('comparison_reg3.pdf',format='pdf',dpi=500)
+    plt.show()
