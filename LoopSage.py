@@ -305,7 +305,7 @@ class LoopSage:
         if np.all(self.bw_files!=None):
             for i, f in enumerate(self.bw_files):
                 self.BWs[i,:] = load_track(file=f,region=self.region,chrom=self.chrom,N_beads=self.N_beads,viz=False) if np.all(self.bw_files!=None) else None
-        self.track = load_track(self.track_file,self.region,self.chrom,self.N_beads,False) if np.all(self.track_file!=None) else None
+        self.track = load_track(self.track_file,self.region,self.chrom,self.N_beads,False,True) if np.all(self.track_file!=None) else None
         self.N_CTCF = np.max([np.count_nonzero(self.L),np.count_nonzero(self.R)])
         print('Number of CTCF:',self.N_CTCF)
 
