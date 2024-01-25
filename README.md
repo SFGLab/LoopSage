@@ -1,6 +1,10 @@
 # LoopSage
 An energy-based model for loop extrusion.
 
+
+## Publication
+* Korsak, Sevastianos, and Dariusz Plewczynski. "LoopSage: An Energy-Based Monte Carlo approach for the Loop Extrusion Modelling of Chromatin." bioRxiv (2024): 2024-01.
+
 ## The model
 
 Let's assume that each cohesin $i$ can be represented of two coordinates $(m_{i},n_{i})$ we allow three moves in our simulation:
