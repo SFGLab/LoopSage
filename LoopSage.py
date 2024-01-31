@@ -320,15 +320,13 @@ class LoopSage:
         corr_exp_heat(sim_heat,self.bedpe_file,self.region,self.chrom,self.N_beads,self.path)
 
 def main():
+    # Definition of Monte Carlo parameters
     N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 5,1
     
-    # For method paper
-    # region, chrom = [178421513,179491193], 'chr1'
-    # region, chrom = [225236830,226046745], 'chr1'
-    # region, chrom = [157237518,158076910], 'chr2'
-    # region, chrom = [212470553,213427421], 'chr2'
+    # Definition of region
     region, chrom =[165000000,171000000], 'chr1'
 
+    # Definition of data
     label=f'method_paper_Annealing'
     bedpe_file = '/home/skorsak/Documents/data/method_paper_data/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'
     # coh_track_file = '/mnt/raid/data/Petros_project/bw/RAD21_ChIPseq/mm_BMDM_WT_Rad21_heme_60min.bw'
@@ -338,7 +336,7 @@ def main():
     
     sim = LoopSage(region,chrom,bedpe_file,label=label,N_beads=5000)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Annealing',viz=True,save=True)
-    sim.run_EM('CUDA')
+    sim.run_EM('CUDA') # for molecular mechanics or run_MD for molecular dynamics with OpenMM
 
 if __name__=='__main__':
     main()
