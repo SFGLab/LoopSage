@@ -5,7 +5,7 @@ An energy-based model for loop extrusion.
 ## Publication
 Please cite the method paper in case that you would like to use this model for your work,
 
-* Korsak, Sevastianos, and Dariusz Plewczynski. "LoopSage: An Energy-Based Monte Carlo approach for the Loop Extrusion Modelling of Chromatin." bioRxiv (2024): 2024-01.
+* Korsak, Sevastianos, and Dariusz Plewczynski. "LoopSage: An energy-based Monte Carlo approach for the loop extrusion modelling of chromatin." Methods (2024).
 
 ## The model
 
