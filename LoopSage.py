@@ -321,7 +321,7 @@ class LoopSage:
         corr_exp_heat(sim_heat,self.bedpe_file,self.region,self.chrom,self.N_beads,self.path)
 
 def main():
-    N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 5,1
+    N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 30,1
     
     # For method paper
     # region, chrom = [178421513,179491193], 'chr1'
@@ -338,7 +338,7 @@ def main():
     # bw_files = [bw_file1,bw_file2]
     
     sim = LoopSage(region,chrom,bedpe_file,label=label,N_beads=5000)
-    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Annealing',viz=True,save=True)
+    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Metropolis',viz=True,save=True)
     sim.run_EM('CUDA')
 
 if __name__=='__main__':
