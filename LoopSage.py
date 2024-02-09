@@ -321,25 +321,25 @@ class LoopSage:
         corr_exp_heat(sim_heat,self.bedpe_file,self.region,self.chrom,self.N_beads,self.path)
 
 def main():
-    N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 30,1
+    N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 30,1 # temperatures 1 3 5 10
     
     # For method paper
-    # region, chrom = [178421513,179491193], 'chr1'
+    # region, chrom = [178421513,179491193], 'chr1'  N_beads=1000
     # region, chrom = [225236830,226046745], 'chr1'
     # region, chrom = [157237518,158076910], 'chr2'
     # region, chrom = [212470553,213427421], 'chr2'
     region, chrom =[165000000,171000000], 'chr1'
 
     label=f'method_paper_Annealing'
-    bedpe_file = '/home/skorsak/Documents/data/method_paper_data/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'
+    bedpe_file = '/home/rafal/Documensts/data/LHG0052H_loops_cleaned_th10_2.bedpe'
     # coh_track_file = '/mnt/raid/data/Petros_project/bw/RAD21_ChIPseq/mm_BMDM_WT_Rad21_heme_60min.bw'
     # bw_file1 = '/home/skorsak/Documents/data/Petros_project/bw/BACH1_ChIPseq/mm_Bach1_1h_rep1_heme_merged.bw'
     # bw_file2 = '/home/skorsak/Documents/data/Petros_project/bw/RNAPol_ChIPseq/WT-RNAPOLIIS2-1h-heme100-rep1_S5.bw'
     # bw_files = [bw_file1,bw_file2]
     
-    sim = LoopSage(region,chrom,bedpe_file,label=label,N_beads=5000)
+    sim = LoopSage(region,chrom,bedpe_file, label=label,N_beads=5000)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Metropolis',viz=True,save=True)
     sim.run_EM('CUDA')
-
+#   sim.run_MD('CUDA')
 if __name__=='__main__':
     main()

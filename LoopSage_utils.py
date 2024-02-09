@@ -336,11 +336,13 @@ def get_heatmap(mm_vec,save_path=None,th=1,save=False):
     mat = 1/(mat+1)
 
     if save_path!=None:
+        plt.ioff()
         figure(figsize=(25, 20))
         plt.imshow(mat,cmap="Reds")
         if save: plt.savefig(save_path,format='svg',dpi=500)
         plt.close()
         if save: np.save(save_path.replace("svg", "npy"),mat)
+        plt.ion()
     return mat
 
 def heats_to_prob(heats,path,burnin,q=0.15):

@@ -58,6 +58,7 @@ class EM_LE:
 
             # Minimize energy
             platform = mm.Platform.getPlatformByName(self.platform)
+            print(platform)
             simulation = Simulation(pdb.topology, self.system, integrator, platform)
             simulation.context.setPositions(pdb.positions)
             simulation.minimizeEnergy(tolerance=0.001)

@@ -1,0 +1,5 @@
+# Ignore Python bytecode files
+__pycache__
+
+# Ignore the directory LoopSage_Nbeads_5000_Ncoh_159_chr1_reg_[165000000,171000000]_method_paper_Annealing
+LoopSage_Nbeads_*/
