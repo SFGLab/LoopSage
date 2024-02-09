@@ -291,7 +291,6 @@ class LoopSage:
             np.save(self.path+'/other/Ks.npy',Ks)
         
         # Some vizualizations
-        if self.path!=None: save_info(self.N_beads,self.N_lef,self.N_CTCF,self.kappa,self.f,self.b,self.avg_loop,self.path,N_steps,MC_step,burnin,mode,ufs,Es,Ks,Fs,Bs)
         if viz: coh_traj_plot(self.Ms,self.Ns,self.N_beads, self.path)
         if viz: make_timeplots(Es, Bs, Ks, Fs, bi, mode, self.path)
         if viz: coh_probdist_plot(self.Ms,self.Ns,self.N_beads,self.path)
@@ -306,7 +305,7 @@ class LoopSage:
         if np.all(self.bw_files!=None):
             for i, f in enumerate(self.bw_files):
                 self.BWs[i,:] = load_track(file=f,region=self.region,chrom=self.chrom,N_beads=self.N_beads,viz=False) if np.all(self.bw_files!=None) else None
-        self.track = load_track(self.track_file,self.region,self.chrom,self.N_beads,False) if np.all(self.track_file!=None) else None
+        self.track = load_track(self.track_file,self.region,self.chrom,self.N_beads,False,True) if np.all(self.track_file!=None) else None
         self.N_CTCF = np.max([np.count_nonzero(self.L),np.count_nonzero(self.R)])
         print('Number of CTCF:',self.N_CTCF)
 
@@ -321,25 +320,23 @@ class LoopSage:
         corr_exp_heat(sim_heat,self.bedpe_file,self.region,self.chrom,self.N_beads,self.path)
 
 def main():
-    N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 30,1 # temperatures 1 3 5 10
+    # Definition of Monte Carlo parameters
+    N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 5,1
     
-    # For method paper
-    # region, chrom = [178421513,179491193], 'chr1'  N_beads=1000
-    # region, chrom = [225236830,226046745], 'chr1'
-    # region, chrom = [157237518,158076910], 'chr2'
-    # region, chrom = [212470553,213427421], 'chr2'
+    # Definition of region
     region, chrom =[165000000,171000000], 'chr1'
 
+    # Definition of data
     label=f'method_paper_Annealing'
-    bedpe_file = '/home/rafal/Documensts/data/LHG0052H_loops_cleaned_th10_2.bedpe'
+    bedpe_file = '/home/skorsak/Documents/data/method_paper_data/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'
     # coh_track_file = '/mnt/raid/data/Petros_project/bw/RAD21_ChIPseq/mm_BMDM_WT_Rad21_heme_60min.bw'
     # bw_file1 = '/home/skorsak/Documents/data/Petros_project/bw/BACH1_ChIPseq/mm_Bach1_1h_rep1_heme_merged.bw'
     # bw_file2 = '/home/skorsak/Documents/data/Petros_project/bw/RNAPol_ChIPseq/WT-RNAPOLIIS2-1h-heme100-rep1_S5.bw'
     # bw_files = [bw_file1,bw_file2]
     
-    sim = LoopSage(region,chrom,bedpe_file, label=label,N_beads=5000)
-    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Metropolis',viz=True,save=True)
-    sim.run_EM('CUDA')
-#   sim.run_MD('CUDA')
+    sim = LoopSage(region,chrom,bedpe_file,label=label,N_beads=5000)
+    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Annealing',viz=True,save=True)
+    sim.run_EM('CUDA') # for molecular mechanics or run_MD for molecular dynamics with OpenMM
+
 if __name__=='__main__':
     main()

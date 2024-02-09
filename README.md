@@ -1,6 +1,12 @@
 # LoopSage
 An energy-based model for loop extrusion.
 
+
+## Publication
+Please cite the method paper in case that you would like to use this model for your work,
+
+* Korsak, Sevastianos, and Dariusz Plewczynski. "LoopSage: An energy-based Monte Carlo approach for the loop extrusion modelling of chromatin." Methods (2024).
+
 ## The model
 
 Let's assume that each cohesin $i$ can be represented of two coordinates $(m_{i},n_{i})$ we allow three moves in our simulation:
@@ -76,6 +82,23 @@ sim.run_MD()
 ```
 
 Firstly, we need to define the input files from which LoopSage would take the information to construct the potential. We define also the specific region that we would like to model. Therefore, in the code script above we define a `bedpe_file` from which information about the CTCF loops it is imported. In `coh_track_file` you can optionally define the track file with some cohesin coverage of ChIP-Seq to determine the distribution of LEFs and allow preferencial binding in regions with higher signal. Then the user can optionally define a list of BigWig files which are needed in case that user would like to model other protein factors and their coefficients $r_i$.
+
+Note that the `.bedpe_file` must be in the following format,
+
+```
+chr1	903917	906857	chr1	937535	939471	16	3.2197903072213415e-05	0.9431392038374097
+chr1	979970	987923	chr1	1000339	1005916	56	0.00010385804708107556	0.9755733944997329
+chr1	980444	982098	chr1	1063024	1065328	12	0.15405319074060866	0.999801529750033
+chr1	981076	985322	chr1	1030933	1034105	36	9.916593137693526e-05	0.01617512105347667
+chr1	982171	985182	chr1	990837	995510	27	2.7536240913152036e-05	0.5549511180231224
+chr1	982867	987410	chr1	1061124	1066833	71	1.105408615726611e-05	0.9995462969421808
+chr1	983923	985322	chr1	1017610	1019841	11	1.7716275555648395e-06	0.10890923034907056
+chr1	984250	986141	chr1	1013038	1015474	14	1.7716282101935205e-06	0.025665007111095667
+chr1	990949	994698	chr1	1001076	1003483	34	0.5386388489931403	0.9942742844900859
+chr1	991375	993240	chr1	1062647	1064919	15	1.0	0.9997541297643132
+```
+
+where the last two columns represent the probabilites for left and right anchor respectively to be tandem right. If the probability is negative it means that no CTCF motif was detected in this anchor. You can extract these probabilities from the repo: https://github.com/SFGLab/3d-analysis-toolkit, with `find_motifs.py` file. 
 
 Then, we define the main parameters of the simulation `N_beads,N_coh,kappa,f,b` or we can choose the default ones (take care because it might be the case that they are not the appropriate ones and they need to be changed), the parameters of Monte Carlo `N_steps, MC_step, burnin, T`, and we initialize the class `LoopSage()`. The command `sim.run_energy_minimization()` corresponds to the stochastic Monte Carlo simulation, and it produces a set of cohesin constraints as a result (`Ms, Ns`). Note that the stochastic simulation has two modes: `Annealing` and `Metropolis`. We feed cohesin constraints to the molecular simulation part of and we run `MD_LE()` or `MD_EM()` simulation which produces a trajectory of 3d-structures, and the average heatmap. `MD_LE()` function can produce an actual trajectory and a `.dcd` video of how simulation changes over time. However, the implementation needs a high amount of memory since we need to define a bond for each time step, and it may not work for large systems. `EM_LE()` is suggested for large simulations, because it does not require so big amount of memory.
 
