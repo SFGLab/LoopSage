@@ -321,21 +321,22 @@ class LoopSage:
 
 def main():
     # Definition of Monte Carlo parameters
-    N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 5,1
+    N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 1,1
     
     # Definition of region
-    region, chrom =[165000000,171000000], 'chr1'
+    #region, chrom = [178421513,179491193], 'chri'
+    #region, chrom =[165000000,171000000], 'chr1'
 
     # Definition of data
     label=f'method_paper_Annealing'
-    bedpe_file = '/home/skorsak/Documents/data/method_paper_data/ENCSR184YZV_CTCF_ChIAPET/LHG0052H_loops_cleaned_th10_2.bedpe'
+    bedpe_file = '/home/rafal/Documensts/data/LHG0052H_loops_cleaned_th10_2.bedpe'
     # coh_track_file = '/mnt/raid/data/Petros_project/bw/RAD21_ChIPseq/mm_BMDM_WT_Rad21_heme_60min.bw'
     # bw_file1 = '/home/skorsak/Documents/data/Petros_project/bw/BACH1_ChIPseq/mm_Bach1_1h_rep1_heme_merged.bw'
     # bw_file2 = '/home/skorsak/Documents/data/Petros_project/bw/RNAPol_ChIPseq/WT-RNAPOLIIS2-1h-heme100-rep1_S5.bw'
     # bw_files = [bw_file1,bw_file2]
     
     sim = LoopSage(region,chrom,bedpe_file,label=label,N_beads=5000)
-    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Annealing',viz=True,save=True)
+    Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Metropolis',viz=True,save=True)
     sim.run_EM('CUDA') # for molecular mechanics or run_MD for molecular dynamics with OpenMM
 
 if __name__=='__main__':
