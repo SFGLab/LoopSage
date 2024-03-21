@@ -10,20 +10,20 @@ from matplotlib.pyplot import cm
 import seaborn as sns
 from statsmodels.graphics.tsaplots import plot_acf
 import scipy.stats
-import hicstraw
+# import hicstraw
 from tqdm import tqdm
 from scipy import stats
 
-def show_hic(path,chrom,region,resolution=5000):
-    hic = hicstraw.HiCFile(path)
-    matrix_object = hic.getMatrixZoomData(chrom, chrom, "observed", "KR", "BP", 5000)
-    mat = matrix_object.getRecordsAsMatrix(region[0],region[1], region[0], region[1])
-    figure(figsize=(10, 10))
-    plt.imshow(mat ,cmap='Reds',vmax=np.average(mat)+np.std(mat))
-    plt.savefig('hic.svg',format='svg',dpi=500)
-    plt.savefig('hic.png',format='png',dpi=500)
-    plt.savefig('hic.pdf',format='pdf',dpi=500)
-    plt.show()
+# def show_hic(path,chrom,region,resolution=5000):
+#     hic = hicstraw.HiCFile(path)
+#     matrix_object = hic.getMatrixZoomData(chrom, chrom, "observed", "KR", "BP", 5000)
+#     mat = matrix_object.getRecordsAsMatrix(region[0],region[1], region[0], region[1])
+#     figure(figsize=(10, 10))
+#     plt.imshow(mat ,cmap='Reds',vmax=np.average(mat)+np.std(mat))
+#     plt.savefig('hic.svg',format='svg',dpi=500)
+#     plt.savefig('hic.png',format='png',dpi=500)
+#     plt.savefig('hic.pdf',format='pdf',dpi=500)
+#     plt.show()
 
 def make_loop_hist(Ms,Ns,path=None):
     Ls = np.abs(Ns-Ms).flatten()
