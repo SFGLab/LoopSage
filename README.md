@@ -45,20 +45,11 @@ In this manner we accept a move in two cases:
 And of course, the result - the distribution of loops in equilibrium -  depends on temperature of Boltzmann distribution $T$.
 
 ## Packages to install
-The following dependecies must be installed in the specific desktop environment that you would like to run the simulation pipeline,
+Install a python 3.10 envornment and run 
 
-* scikit-learn==1.3.2
-* seaborn==0.13.0
-* sewar==0.4.6
-* openmm==0.2
-* mdtraj=1.9.9
-* pandas=2.1.3
-* pybigwig==0.3.22
-* pillow==10.1.0
-* scipy=1.11
-* etc.
-
-You can find an Anaconda environment file in our repository `biosym.yaml`.
+```
+pip install -r requirements.txt
+```
 
 For faster computations use CUDA toolkit: https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=20.04&target_type=deb_local.
 
