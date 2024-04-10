@@ -45,7 +45,7 @@ In this manner we accept a move in two cases:
 And of course, the result - the distribution of loops in equilibrium -  depends on temperature of Boltzmann distribution $T$.
 
 ## Packages to install
-Install a python 3.10 environment and run 
+Install a python 3.10 environment and OpenMM 8.0 and run 
 
 ```
 pip install -r requirements.txt
