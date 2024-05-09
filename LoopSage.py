@@ -334,7 +334,7 @@ def main():
     # bw_file2 = '/home/skorsak/Documents/data/Petros_project/bw/RNAPol_ChIPseq/WT-RNAPOLIIS2-1h-heme100-rep1_S5.bw'
     # bw_files = [bw_file1,bw_file2]
     
-    sim = LoopSage(region,chrom,bedpe_file,label=label,N_beads=5000)
+    sim = LoopSage(region,chrom,bedpe_file,label=label,N_beads=1000)
     Es, Ms, Ns, Bs, Ks, Fs, ufs = sim.run_energy_minimization(N_steps,MC_step,burnin,T,T_min,poisson_choice=True,mode='Annealing',viz=True,save=True)
     sim.run_EM('CUDA') # for molecular mechanics or run_MD for molecular dynamics with OpenMM
 
