@@ -324,7 +324,7 @@ def main():
     N_steps, MC_step, burnin, T, T_min = int(2e4), int(1e2), 1000, 5,1
     
     # Definition of region
-    region, chrom =[165000000,171000000], 'chr1'
+    region, chrom = [178421513, 179491193], 'chr1'
 
     # Definition of data
     label=f'method_paper_Annealing'
