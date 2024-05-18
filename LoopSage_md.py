@@ -154,7 +154,7 @@ class MD_LE:
         figure(figsize=(10, 10))
         plt.imshow(img,cmap="Reds",vmax=1)
         plt.colorbar()
-        plt.savefig(self.path+file_neame,format='svg',dpi=500)
+        plt.savefig(self.path+file_name,format='svg',dpi=500)
         plt.close()
 
 def main():
