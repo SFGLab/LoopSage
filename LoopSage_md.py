@@ -150,7 +150,7 @@ class MD_LE:
         self.add_stiffness()
         self.add_loops()
 
-    def plot_heat(self,img,path_name):
+    def plot_heat(self,img,file_name):
         figure(figsize=(10, 10))
         plt.imshow(img,cmap="Reds",vmax=1)
         plt.colorbar()
