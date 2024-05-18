@@ -1,7 +1,8 @@
 # LoopSage
 An energy-based model for loop extrusion.
 
-$${\color{red}\textbf{Important!} \space Now \space the \space molecular \space dynamics \space simulation  \space can \space run \space for \space larger \space regions, \space since \space the \space forcefield \space does \space not \space allocate \space so \space much \space memory \space anymore.}$$
+$${\color{red}\textbf{Important!} \space Now \space the \space molecular \space dynamics \space simulation  \space can \space run \space for \space larger \space regions,$$
+$$since \space the \space forcefield \space does \space not \space allocate \space so \space much \space memory \space anymore.}$$
 
 
 ## Publication
