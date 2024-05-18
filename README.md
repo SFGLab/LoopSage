@@ -1,6 +1,10 @@
 # LoopSage
 An energy-based model for loop extrusion.
 
+```diff
+**Important!** Now the molecular dynamics simulation can run for larger regions, since the forcefield does not allocate so much memory anymore.
+```
+
 
 ## Publication
 Please cite the method paper in case that you would like to use this model for your work,
