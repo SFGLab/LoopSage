@@ -96,7 +96,7 @@ class MD_LE:
                 self.plot_heat(self.avg_heat,f'/plots/avg_heatmap.svg')
                 self.plot_heat(self.std_heat,f'/plots/std_heatmap.svg')
             return self.avg_heat
-
+    
     def change_loop(self,i):
         force_idx = self.system.getNumForces()-1
         self.system.removeForce(force_idx)
@@ -106,8 +106,8 @@ class MD_LE:
 
     def add_evforce(self):
         'Leonard-Jones potential for excluded volume'
-        self.ev_force = mm.CustomNonbondedForce('epsilon*((sigma1+sigma2)/(r+r_small))^3')
-        self.ev_force.addGlobalParameter('epsilon', defaultValue=20)
+        self.ev_force = mm.CustomNonbondedForce('epsilon*((sigma1+sigma2)/(r+r_small))')
+        self.ev_force.addGlobalParameter('epsilon', defaultValue=10)
         self.ev_force.addGlobalParameter('r_small', defaultValue=0.01)
         self.ev_force.addPerParticleParameter('sigma')
         for i in range(self.N_beads):
@@ -132,7 +132,7 @@ class MD_LE:
         'LE force that connects cohesin restraints'
         self.LE_force = mm.HarmonicBondForce()
         for nn in range(self.N_coh):
-            self.LE_force.addBond(self.M[nn,i], self.N[nn,i], 0.05, 3e3)
+            self.LE_force.addBond(self.M[nn,i], self.N[nn,i], 0.1, 5e4)
         self.system.addForce(self.LE_force)
 
     def add_forcefield(self):
@@ -153,7 +153,6 @@ class MD_LE:
     def plot_heat(self,img,file_name):
         figure(figsize=(10, 10))
         plt.imshow(img,cmap="Reds",vmax=1)
-        plt.colorbar()
         plt.savefig(self.path+file_name,format='svg',dpi=500)
         plt.close()
 
