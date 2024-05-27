@@ -54,8 +54,7 @@ class LoopSage:
         self.log_avg_loop = np.average(np.log(self.dists+1))
         self.params = stats.maxwell.fit(self.dists)
         self.loop_pdist = stats.maxwell.pdf(np.arange(self.N_beads), *self.params)
-        dominator = 1 if self.N_beads<2000 else 2
-        self.N_lef = self.N_CTCF//dominator if N_lef==None else N_lef
+        self.N_lef = self.N_CTCF
         print('Number of LEFs:',self.N_lef)
         self.f = -1000*np.sqrt(self.log_avg_loop/3.5)*self.N_CTCF/self.N_lef if f==None else f
         self.path = make_folder(self.N_beads,self.N_lef,self.region,self.chrom,label=label)
