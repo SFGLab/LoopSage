@@ -1,7 +1,7 @@
 # LoopSage
 An energy-based model for loop extrusion.
 
-**Important!!!** Check https://github.com/SFGLab/pyLoopSage which offers a CPU accelerated version with easier installation.
+‼️‼️**Important:** This is outdated version of our software. The new version is at https://github.com/SFGLab/pyLoopSage which offers a CPU accelerated version with easier installation. You can install it with pip as well https://pypi.org/project/pyLoopSage/. ‼️‼️
 
 
 ## Publication
